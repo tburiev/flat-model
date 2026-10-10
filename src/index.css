@@ -23,6 +23,43 @@ canvas {
   display: block;
 }
 
+/* Custom range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #22c55e 0%, #eab308 25%, #f97316 50%, #3b82f6 75%, #22c55e 100%);
+  outline: none;
+  opacity: 0.9;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fbbf24;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fbbf24;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+}
+
+input[type="range"]:hover {
+  opacity: 1;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
