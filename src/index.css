@@ -40,6 +40,52 @@ canvas {
   line-height: 1.5;
 }
 
+@media (max-width: 768px) {
+  .btn-control {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .btn-play {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+  
+  .btn-step,
+  .btn-season {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .btn-speed {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  .control-group {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .display-box {
+    padding: 6px 12px;
+    min-width: 70px;
+  }
+  
+  .display-box .value {
+    font-size: 14px;
+  }
+  
+  input[type="range"] {
+    width: 120px !important;
+  }
+  
+  .h-12 {
+    height: 2.5rem;
+  }
+}
+
 .btn-control:hover {
   transform: scale(1.05);
 }
