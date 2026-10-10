@@ -45,23 +45,21 @@ function App() {
   const initScene = useCallback(() => {
     if (!containerRef.current) return;
 
+    const width = containerRef.current.clientWidth;
+    const height = containerRef.current.clientHeight;
+
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a1a);
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(
-      55,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      500
-    );
+    const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 500);
     camera.position.set(25, 30, 25);
     camera.lookAt(0, 2, 0);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -697,29 +695,26 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen flex flex-col bg-gray-950">
-      {/* 3D Scene Container */}
-      <div className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
-        {/* 3D Canvas */}
-        <div ref={containerRef} className="absolute inset-0" />
-        
-        {/* Title */}
-        <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md rounded-xl px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 1000 }}>
-          <h1 className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-            🌍 Модель Плоской Земли
-          </h1>
-        </div>
+    <div className="w-full h-screen relative bg-gray-950">
+      {/* 3D Canvas - занимает всё пространство */}
+      <div ref={containerRef} className="absolute inset-0" style={{ bottom: '200px' }} />
+      
+      {/* Title */}
+      <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md rounded-xl px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 1000 }}>
+        <h1 className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+          🌍 Модель Плоской Земли
+        </h1>
+      </div>
 
-        {/* Time display */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-md rounded-lg px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 1000 }}>
-          <div ref={timeDisplayRef} className="text-base font-mono text-blue-300 text-center">
-            0.0ч | День 0
-          </div>
+      {/* Time display */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-md rounded-lg px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 1000 }}>
+        <div ref={timeDisplayRef} className="text-base font-mono text-blue-300 text-center">
+          0.0ч | День 0
         </div>
       </div>
 
-      {/* Control Panel */}
-      <div className="bg-black border-t-4 border-blue-600" style={{ height: '200px', flexShrink: 0 }}>
+      {/* Control Panel - фиксированная внизу */}
+      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-4 border-blue-600" style={{ height: '200px', zIndex: 100 }}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Row 1: Time Control */}
           <div className="flex items-center justify-center gap-2 mb-3">
