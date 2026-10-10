@@ -579,16 +579,23 @@ function App() {
       // Season factor: -1 (winter, far) to +1 (summer, close to center)
       const seasonFactor = Math.cos(s * Math.PI * 2);
 
-      // === SUN ORBIT (independent) ===
+      // === SUN ORBIT ===
+      // Sun completes one full rotation every 24 hours (one day)
+      // Angular speed: 2π / 24 hours = π/12 radians per hour
+      const sunAngularSpeed = Math.PI / 12; // radians per hour
+      const sunAngle = t * sunAngularSpeed;
+      
       // Sun orbit radius varies with season
       // Equator radius = 7.5, Tropic of Cancer (summer) = 5, Tropic of Capricorn (winter) = 10
       const sunBaseRadius = 7.5;
       const sunSeasonAmplitude = 2.5;
       const sunRadius = sunBaseRadius - seasonFactor * sunSeasonAmplitude;
-      const sunHeight = 7 + seasonFactor * 1.5; // Higher in summer, lower in winter
-
-      // Sun moves around the disk - its own independent speed
-      const sunAngle = t * 0.8;
+      
+      // Sun height varies with season (higher in summer, lower in winter)
+      const sunBaseHeight = 7;
+      const sunHeightVariation = 1.5;
+      const sunHeight = sunBaseHeight + seasonFactor * sunHeightVariation;
+      
       ref.sun.position.x = Math.cos(sunAngle) * sunRadius;
       ref.sun.position.z = Math.sin(sunAngle) * sunRadius;
       ref.sun.position.y = sunHeight;
@@ -596,29 +603,37 @@ function App() {
       // Update sun orbit ring to show current orbit
       updateOrbitRing(ref.sunOrbitRing, sunRadius, sunHeight);
 
-      // Sun rays follow sun
-
-
       // Light cone follows sun
       lightCone.position.x = ref.sun.position.x;
       lightCone.position.z = ref.sun.position.z;
       lightCone.position.y = ref.sun.position.y / 2;
 
-      // === MOON ORBIT (completely independent) ===
-      // Moon has its own cycle, slightly different from sun
-      // Moon's season cycle is offset from sun's (different phase)
-      const moonSeasonPhase = s + 0.15; // Moon's season is offset
+      // === MOON ORBIT ===
+      // Moon completes one full rotation every ~27.3 days (sidereal month)
+      // Angular speed: 2π / (27.3 * 24) hours = π / 327.6 radians per hour
+      const moonAngularSpeed = Math.PI / 327.6; // radians per hour
+      const moonAngle = t * moonAngularSpeed;
+      
+      // Moon orbit is similar to sun but slightly larger
+      // Moon also follows seasonal pattern but with slight offset
+      const moonSeasonPhase = s + 0.1; // Slight offset from sun
       const moonSeasonFactor = Math.cos(moonSeasonPhase * Math.PI * 2);
-
-      const moonBaseRadius = 10;
+      
+      const moonBaseRadius = 9;
       const moonSeasonAmplitude = 2;
       const moonRadius = moonBaseRadius - moonSeasonFactor * moonSeasonAmplitude;
-      const moonHeight = 9.5 + moonSeasonFactor * 1;
-
-      // Moon moves at its own speed (slower than sun, different starting angle)
-      const moonAngle = t * 0.53 + 2.1; // Independent speed and phase
-      ref.moon.position.x = Math.cos(moonAngle) * moonRadius;
-      ref.moon.position.z = Math.sin(moonAngle) * moonRadius;
+      
+      // Moon height is slightly higher than sun
+      const moonBaseHeight = 8.5;
+      const moonHeightVariation = 1;
+      const moonHeight = moonBaseHeight + moonSeasonFactor * moonHeightVariation;
+      
+      // Moon is roughly opposite to sun (180 degrees offset)
+      // This creates the day/night cycle for the moon
+      const moonAngleOffset = Math.PI; // 180 degrees from sun
+      
+      ref.moon.position.x = Math.cos(moonAngle + moonAngleOffset) * moonRadius;
+      ref.moon.position.z = Math.sin(moonAngle + moonAngleOffset) * moonRadius;
       ref.moon.position.y = moonHeight;
 
       // Update moon orbit ring
@@ -744,8 +759,9 @@ function App() {
 
       {/* Нижняя часть: Панель управления */}
       <div 
-        className="bg-gradient-to-b from-slate-900 via-slate-900 to-black border-t border-cyan-500/30 shadow-2xl"
+        className="border-t border-cyan-500/30 shadow-2xl"
         style={{ 
+          background: 'linear-gradient(to bottom, #0f172a 0%, #0f172a 50%, #000000 100%)',
           paddingBottom: 'env(safe-area-inset-bottom, 10px)',
           marginBottom: 'env(safe-area-inset-bottom, 0px)'
         }}
