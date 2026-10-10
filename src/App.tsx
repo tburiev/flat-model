@@ -14,8 +14,8 @@ interface SceneRefs {
   sunRays: THREE.Group;
   nightOverlay: THREE.Mesh;
   lightCone: THREE.Mesh;
-  sunOrbitRing: THREE.Line;
-  moonOrbitRing: THREE.Line;
+  sunOrbitRing: THREE.Object3D;
+  moonOrbitRing: THREE.Object3D;
   animationId: number;
   time: number;
   timeSpeed: number;
@@ -180,29 +180,6 @@ function App() {
     iceWallTop.rotation.x = -Math.PI / 2;
     iceWallTop.position.y = 2;
     iceWallGroup.add(iceWallTop);
-
-    // Ice spikes on top of wall
-    for (let i = 0; i < 60; i++) {
-      const angle = (i / 60) * Math.PI * 2;
-      const spikeHeight = 0.5 + Math.random() * 1.5;
-      const spikeWidth = 0.1 + Math.random() * 0.2;
-      const spikeGeometry = new THREE.ConeGeometry(spikeWidth, spikeHeight, 5);
-      const spikeMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        emissive: 0x445566,
-        emissiveIntensity: 0.1,
-        roughness: 0.3,
-        metalness: 0.2,
-      });
-      const spike = new THREE.Mesh(spikeGeometry, spikeMaterial);
-      const r = earthRadius + 0.5;
-      spike.position.x = Math.cos(angle) * r;
-      spike.position.z = Math.sin(angle) * r;
-      spike.position.y = 2 + spikeHeight / 2;
-      spike.rotation.z = (Math.random() - 0.5) * 0.3;
-      spike.rotation.x = (Math.random() - 0.5) * 0.3;
-      iceWallGroup.add(spike);
-    }
     scene.add(iceWallGroup);
 
     // === DOME (Firmament) ===
@@ -353,22 +330,18 @@ function App() {
     scene.add(sunRaysGroup);
 
     // === SUN ORBIT RING (visual indicator) ===
-    const sunOrbitPoints: THREE.Vector3[] = [];
-    for (let i = 0; i <= 128; i++) {
-      const angle = (i / 128) * Math.PI * 2;
-      sunOrbitPoints.push(new THREE.Vector3(
-        Math.cos(angle) * 7,
-        8,
-        Math.sin(angle) * 7
-      ));
-    }
-    const sunOrbitGeometry = new THREE.BufferGeometry().setFromPoints(sunOrbitPoints);
-    const sunOrbitMaterial = new THREE.LineBasicMaterial({
+    const sunOrbitInner = 6.7;
+    const sunOrbitOuter = 7.3;
+    const sunOrbitGeometry = new THREE.RingGeometry(sunOrbitInner, sunOrbitOuter, 128);
+    const sunOrbitMaterial = new THREE.MeshBasicMaterial({
       color: 0xffaa00,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
     });
-    const sunOrbitRing = new THREE.Line(sunOrbitGeometry, sunOrbitMaterial);
+    const sunOrbitRing = new THREE.Mesh(sunOrbitGeometry, sunOrbitMaterial);
+    sunOrbitRing.rotation.x = -Math.PI / 2;
+    sunOrbitRing.position.y = 8;
     scene.add(sunOrbitRing);
 
     // === MOON ===
@@ -401,22 +374,18 @@ function App() {
     scene.add(moonGroup);
 
     // === MOON ORBIT RING ===
-    const moonOrbitPoints: THREE.Vector3[] = [];
-    for (let i = 0; i <= 128; i++) {
-      const angle = (i / 128) * Math.PI * 2;
-      moonOrbitPoints.push(new THREE.Vector3(
-        Math.cos(angle) * 10,
-        10,
-        Math.sin(angle) * 10
-      ));
-    }
-    const moonOrbitGeometry = new THREE.BufferGeometry().setFromPoints(moonOrbitPoints);
-    const moonOrbitMaterial = new THREE.LineBasicMaterial({
-      color: 0x6666aa,
+    const moonOrbitInner = 9.7;
+    const moonOrbitOuter = 10.3;
+    const moonOrbitGeometry = new THREE.RingGeometry(moonOrbitInner, moonOrbitOuter, 128);
+    const moonOrbitMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8888cc,
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
     });
-    const moonOrbitRing = new THREE.Line(moonOrbitGeometry, moonOrbitMaterial);
+    const moonOrbitRing = new THREE.Mesh(moonOrbitGeometry, moonOrbitMaterial);
+    moonOrbitRing.rotation.x = -Math.PI / 2;
+    moonOrbitRing.position.y = 10;
     scene.add(moonOrbitRing);
 
     // === LIGHT CONE ===
@@ -733,228 +702,140 @@ function App() {
       <div ref={containerRef} className="w-full h-full" />
 
       {/* Title */}
-      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50 max-w-xs">
-        <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+      <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md rounded-xl px-4 py-2 text-white border border-blue-900/50">
+        <h1 className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
           🌍 Модель Плоской Земли
         </h1>
-        <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
-          Интерактивная 3D визуализация
-        </p>
-      </div>
-
-      {/* Info Panel */}
-      <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50 max-w-[200px] sm:max-w-xs">
-        <h3 className="text-xs sm:text-sm font-bold text-blue-300 mb-2">Элементы модели:</h3>
-        <ul className="text-[10px] sm:text-xs text-gray-300 space-y-0.5">
-          <li>☀️ Солнце — независимая орбита</li>
-          <li>🌙 Луна — независимая орбита</li>
-          <li>⭐ Звёзды — на куполе</li>
-          <li>🫧 Купол (твердь)</li>
-          <li>🧊 Ледяная стена</li>
-          <li>📍 Сев. полюс — в центре</li>
-        </ul>
-        <div className="mt-2 pt-2 border-t border-gray-700/50">
-          <p className="text-[9px] sm:text-[10px] text-gray-500">
-            🖱️ ЛКМ — вращение | Колёсико — зум | ПКМ — сдвиг
-          </p>
-        </div>
       </div>
 
       {/* Time display */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-lg px-3 py-1.5 text-white border border-blue-900/50">
-        <div className="text-[10px] text-gray-400 text-center">Время модели</div>
-        <div ref={timeDisplayRef} className="text-sm font-mono text-blue-300 text-center">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-lg px-4 py-2 text-white border border-blue-900/50">
+        <div ref={timeDisplayRef} className="text-base font-mono text-blue-300 text-center">
           0.0ч | День 0
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50">
-        {/* Row 1: Time control */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <span className="text-xs text-gray-400 font-medium">⏱️ Время:</span>
-          
-          {/* Rewind */}
-          <button
-            onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              timeDirection === -1 && isPlaying
-                ? 'bg-red-600 shadow-lg shadow-red-900/30 ring-2 ring-red-400'
-                : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-            title="Запустить время назад"
-          >
-            ⏪ Назад
-          </button>
-          
-          {/* Play/Pause */}
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-              isPlaying
-                ? 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/30'
-                : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/30'
-            }`}
-          >
-            {isPlaying ? '⏸ Пауза' : '▶ Запуск'}
-          </button>
-          
-          {/* Forward */}
-          <button
-            onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              timeDirection === 1 && isPlaying
-                ? 'bg-green-600 shadow-lg shadow-green-900/30 ring-2 ring-green-400'
-                : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-            title="Запустить время вперёд"
-          >
-            Вперёд ⏩
-          </button>
-
-          {/* Step controls (when paused) */}
-          <div className="flex items-center gap-1 ml-2">
+      {/* Control Panel */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 to-black/80 backdrop-blur-md border-t border-blue-900/50">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          {/* Row 1: Time Control */}
+          <div className="flex items-center justify-center gap-2 mb-3">
             <button
-              onClick={() => {
-                if (sceneRef.current) {
-                  sceneRef.current.time -= 1;
-                }
-              }}
-              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-medium"
-              title="Шаг назад (на паузе)"
+              onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                timeDirection === -1 && isPlaying
+                  ? 'bg-red-600 shadow-lg shadow-red-900/50 ring-2 ring-red-400'
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
             >
-              ◀ Шаг
+              ⏪ Назад
+            </button>
+            
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className={`px-6 py-2 rounded-lg text-base font-bold transition-all ${
+                isPlaying
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/50'
+                  : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/50'
+              }`}
+            >
+              {isPlaying ? '⏸ Пауза' : '▶ Старт'}
+            </button>
+            
+            <button
+              onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                timeDirection === 1 && isPlaying
+                  ? 'bg-green-600 shadow-lg shadow-green-900/50 ring-2 ring-green-400'
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              Вперёд ⏩
+            </button>
+
+            <div className="w-px h-8 bg-gray-600 mx-2"></div>
+
+            <button
+              onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
+              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-bold"
+            >
+              ◀
             </button>
             <button
-              onClick={() => {
-                if (sceneRef.current) {
-                  sceneRef.current.time += 1;
-                }
-              }}
-              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-medium"
-              title="Шаг вперёд (на паузе)"
+              onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
+              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-bold"
             >
-              Шаг ▶
+              ▶
             </button>
           </div>
-        </div>
 
-        {/* Row 2: Speed control */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-gray-700/50">
-          <span className="text-xs text-gray-400 font-medium">🚀 Скорость:</span>
-          
-          <button
-            onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition-colors font-medium"
-          >
-            ◀ Медленнее
-          </button>
-          <span className="px-3 py-1.5 bg-gray-800 rounded-lg text-sm font-mono min-w-[60px] text-center text-blue-300 font-bold">
-            {timeSpeed.toFixed(1)}x
-          </span>
-          <button
-            onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition-colors font-medium"
-          >
-            Быстрее ▶
-          </button>
+          {/* Row 2: Speed Control */}
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <span className="text-sm text-gray-400 font-medium">Скорость:</span>
+            <button
+              onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm font-bold"
+            >
+              −
+            </button>
+            <span className="px-4 py-1.5 bg-gray-800 rounded text-sm font-mono font-bold text-blue-300 min-w-[70px] text-center">
+              {timeSpeed.toFixed(1)}x
+            </span>
+            <button
+              onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm font-bold"
+            >
+              +
+            </button>
+            
+            <div className="w-px h-6 bg-gray-600 mx-2"></div>
 
-          {/* Speed presets */}
-          <div className="flex gap-1 ml-2">
-            {[0.25, 0.5, 1, 2, 5, 10, 20].map(speed => (
+            {[0.5, 1, 2, 5, 10].map(speed => (
               <button
                 key={speed}
                 onClick={() => setTimeSpeed(speed)}
-                className={`px-2 py-1 rounded text-xs transition-all font-medium ${
+                className={`px-3 py-1.5 rounded text-sm font-bold transition-all ${
                   Math.abs(timeSpeed - speed) < 0.01
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30 ring-2 ring-blue-400'
-                    : 'bg-gray-700/80 hover:bg-gray-600 text-gray-300'
+                    ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                 }`}
               >
                 {speed}x
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Row 3: Season control */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-gray-700/50">
-          <span className="text-xs text-gray-400 font-medium">🌍 Время года:</span>
-          <span className="text-sm font-bold text-amber-300 min-w-[160px]">
-            {getSeasonName(season)}
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={season}
-            onChange={(e) => setSeason(parseFloat(e.target.value))}
-            className="flex-1 min-w-[120px] max-w-[300px] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-          <div className="flex gap-1">
-            <button
-              onClick={() => setSeason(0)}
-              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-                season < 0.125 || season >= 0.875 ? 'bg-green-600 ring-2 ring-green-400' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🌸 Весна
-            </button>
-            <button
-              onClick={() => setSeason(0.25)}
-              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-                season >= 0.125 && season < 0.375 ? 'bg-yellow-600 ring-2 ring-yellow-400' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ☀️ Лето
-            </button>
-            <button
-              onClick={() => setSeason(0.5)}
-              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-                season >= 0.375 && season < 0.625 ? 'bg-orange-600 ring-2 ring-orange-400' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🍂 Осень
-            </button>
-            <button
-              onClick={() => setSeason(0.75)}
-              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-                season >= 0.625 && season < 0.875 ? 'bg-blue-600 ring-2 ring-blue-400' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ❄️ Зима
-            </button>
+          {/* Row 3: Season Control */}
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-sm text-gray-400 font-medium">Сезон:</span>
+            <span className="text-sm font-bold text-amber-300 min-w-[140px] text-center">
+              {getSeasonName(season)}
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={season}
+              onChange={(e) => setSeason(parseFloat(e.target.value))}
+              className="w-48 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            />
+            <div className="flex gap-1">
+              {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSeason(i * 0.25)}
+                  className={`px-3 py-1.5 rounded text-lg transition-all ${
+                    Math.abs(season - i * 0.25) < 0.125
+                      ? 'bg-amber-600 shadow-lg ring-2 ring-amber-400'
+                      : 'bg-gray-700 hover:bg-gray-600'
+                  }`}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Row 4: Toggles */}
-        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/50">
-          <span className="text-xs text-gray-400 font-medium">👁️ Отображение:</span>
-          <button
-            onClick={() => setShowDome(!showDome)}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-              showDome ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            🫧 Купол {showDome ? 'ВКЛ' : 'ВЫКЛ'}
-          </button>
-          <button
-            onClick={() => setShowSunRays(!showSunRays)}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-              showSunRays ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            ☀️ Лучи {showSunRays ? 'ВКЛ' : 'ВЫКЛ'}
-          </button>
-          <button
-            onClick={() => setDayNight(!dayNight)}
-            className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
-              dayNight ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            🌗 День/Ночь {dayNight ? 'ВКЛ' : 'ВЫКЛ'}
-          </button>
         </div>
       </div>
     </div>
@@ -962,19 +843,13 @@ function App() {
 }
 
 // Update orbit ring geometry
-function updateOrbitRing(ring: THREE.Line, radius: number, height: number) {
-  const points: THREE.Vector3[] = [];
-  for (let i = 0; i <= 128; i++) {
-    const angle = (i / 128) * Math.PI * 2;
-    points.push(new THREE.Vector3(
-      Math.cos(angle) * radius,
-      height,
-      Math.sin(angle) * radius
-    ));
-  }
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  ring.geometry.dispose();
-  ring.geometry = geometry;
+function updateOrbitRing(ring: THREE.Object3D, radius: number, height: number) {
+  const mesh = ring as THREE.Mesh;
+  const thickness = 0.3;
+  const newGeometry = new THREE.RingGeometry(radius - thickness, radius + thickness, 128);
+  mesh.geometry.dispose();
+  mesh.geometry = newGeometry;
+  mesh.position.y = height;
 }
 
 // Fallback earth texture
