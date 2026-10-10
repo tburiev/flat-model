@@ -750,9 +750,9 @@ function App() {
           marginBottom: 'env(safe-area-inset-bottom, 0px)'
         }}
       >
-        <div className="max-w-7xl mx-auto px-2 sm:px-8 py-3 sm:py-5 space-y-2 sm:space-y-4">
+        <div className="max-w-7xl mx-auto px-1 sm:px-8 py-2 sm:py-5 space-y-1 sm:space-y-4">
           {/* Row 1: Time Control */}
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
             <div className="control-group">
               <button
                 onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
@@ -797,7 +797,7 @@ function App() {
           </div>
 
           {/* Row 2: Speed Control */}
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
             <div className="control-group">
               <span className="text-sm text-slate-400 font-semibold">Скорость:</span>
               <button
@@ -835,7 +835,7 @@ function App() {
           </div>
 
           {/* Row 3: Time Slider */}
-          <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-1 sm:gap-4 flex-wrap">
             <div className="control-group" style={{ width: '100%', maxWidth: '700px' }}>
               <span className="text-xs sm:text-sm text-slate-400 font-semibold whitespace-nowrap">Время:</span>
               <input
@@ -851,14 +851,14 @@ function App() {
                     sceneRef.current.time = newTime;
                   }
                 }}
-                className="flex-1 w-32 sm:w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                className="flex-1 w-24 sm:w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
               <span className="text-xs text-slate-500 whitespace-nowrap hidden sm:inline">±24ч</span>
             </div>
           </div>
 
           {/* Row 4: Season Control */}
-          <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-1 sm:gap-4 flex-wrap">
             <div className="control-group">
               <span className="text-xs sm:text-sm text-slate-400 font-semibold">Сезон:</span>
               <div className="display-box season">
@@ -871,9 +871,9 @@ function App() {
                 step="0.01"
                 value={season}
                 onChange={(e) => setSeason(parseFloat(e.target.value))}
-                className="w-24 sm:w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-20 sm:w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
               />
-              <div className="flex gap-1 sm:gap-2">
+              <div className="flex gap-1">
                 {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
                   <button
                     key={i}
