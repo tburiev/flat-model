@@ -11,11 +11,11 @@ interface SceneRefs {
   moon: THREE.Group;
   stars: THREE.Points;
   domeGroup: THREE.Group;
-  sunRays: THREE.Group;
+
   nightOverlay: THREE.Mesh;
   lightCone: THREE.Mesh;
-  sunOrbitRing: THREE.Line;
-  moonOrbitRing: THREE.Line;
+  sunOrbitRing: THREE.Object3D;
+  moonOrbitRing: THREE.Object3D;
   animationId: number;
   time: number;
   timeSpeed: number;
@@ -31,11 +31,12 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [timeSpeed, setTimeSpeed] = useState(1);
   const [showDome, setShowDome] = useState(true);
-  const [showSunRays, setShowSunRays] = useState(true);
+
   const [dayNight, setDayNight] = useState(true);
   const [season, setSeason] = useState(0.25); // Start at summer solstice (northern hemisphere)
   const [timeDirection, setTimeDirection] = useState(1); // 1 = forward, -1 = backward
   const timeDirectionRef = useRef(1);
+  const timeSliderRef = useRef<HTMLInputElement>(null);
 
   // Keep ref in sync
   useEffect(() => {
@@ -45,28 +46,26 @@ function App() {
   const initScene = useCallback(() => {
     if (!containerRef.current) return;
 
+    const width = containerRef.current.clientWidth;
+    const height = containerRef.current.clientHeight;
+
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020010);
+    scene.background = new THREE.Color(0x0a0a1a);
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(
-      55,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      500
-    );
+    const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 500);
     camera.position.set(25, 30, 25);
     camera.lookAt(0, 2, 0);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.8;
     containerRef.current.appendChild(renderer.domElement);
 
     // Controls
@@ -79,10 +78,10 @@ function App() {
     controls.target.set(0, 2, 0);
 
     // === LIGHTING ===
-    const ambientLight = new THREE.AmbientLight(0x334466, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x445566, 0.4);
     scene.add(ambientLight);
 
-    const hemisphereLight = new THREE.HemisphereLight(0x446688, 0x112233, 0.3);
+    const hemisphereLight = new THREE.HemisphereLight(0x667788, 0x223344, 0.3);
     scene.add(hemisphereLight);
 
     // === FLAT EARTH DISK ===
@@ -133,61 +132,73 @@ function App() {
     edge.position.y = 0;
     scene.add(edge);
 
-    // === NIGHT OVERLAY (day/night terminator) ===
-    const nightGeometry = new THREE.CylinderGeometry(earthRadius + 0.01, earthRadius + 0.01, 0.52, 128, 1, false, 0, Math.PI);
-    const nightMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000022,
+    // === NIGHT OVERLAY (day/night terminator with shader) ===
+    const nightGeometry = new THREE.CircleGeometry(earthRadius, 128);
+    nightGeometry.rotateX(-Math.PI / 2);
+    
+    const nightUniforms = {
+      sunPosition: { value: new THREE.Vector3(10, 8, 0) },
+      earthRadius: { value: earthRadius },
+    };
+    
+    const nightMaterial = new THREE.ShaderMaterial({
+      uniforms: nightUniforms,
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 sunPosition;
+        uniform float earthRadius;
+        varying vec3 vWorldPosition;
+        
+        void main() {
+          // Vector from point on disk to sun
+          vec3 toSun = sunPosition - vWorldPosition;
+          float distanceToSun = length(toSun);
+          
+          // Normalize
+          vec3 dirToSun = toSun / distanceToSun;
+          
+          // Surface normal (pointing up)
+          vec3 surfaceNormal = vec3(0.0, 1.0, 0.0);
+          
+          // Dot product determines if sun is above horizon
+          float dotProduct = dot(dirToSun, surfaceNormal);
+          
+          // Terminator calculation
+          // When dotProduct > 0: sun is above horizon (day)
+          // When dotProduct < 0: sun is below horizon (night)
+          // Smooth transition at terminator
+          
+          float terminator = smoothstep(-0.1, 0.1, dotProduct);
+          
+          // Night side opacity (inverse of terminator)
+          float nightOpacity = 1.0 - terminator;
+          
+          // Distance-based darkening (farther from sun = darker)
+          float distanceFactor = clamp(distanceToSun / (earthRadius * 2.0), 0.0, 1.0);
+          nightOpacity *= mix(0.3, 0.7, distanceFactor);
+          
+          // Night color
+          vec3 nightColor = vec3(0.0, 0.05, 0.15);
+          
+          gl_FragColor = vec4(nightColor, nightOpacity * 0.6);
+        }
+      `,
       transparent: true,
-      opacity: 0.55,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
+    
     const nightOverlay = new THREE.Mesh(nightGeometry, nightMaterial);
-    nightOverlay.position.y = 0.01;
+    nightOverlay.position.y = 0.27;
     scene.add(nightOverlay);
 
-    // === ICE WALL (Antarctica) ===
-    const iceWallGroup = new THREE.Group();
-
-    // Main ice ring
-    const iceWallGeometry = new THREE.TorusGeometry(earthRadius + 0.3, 1.2, 8, 128);
-    const iceWallMaterial = new THREE.MeshStandardMaterial({
-      color: 0xc8ddf0,
-      emissive: 0x223344,
-      emissiveIntensity: 0.2,
-      roughness: 0.3,
-      metalness: 0.1,
-    });
-    const iceWall = new THREE.Mesh(iceWallGeometry, iceWallMaterial);
-    iceWall.rotation.x = Math.PI / 2;
-    iceWall.position.y = 0.8;
-    iceWall.castShadow = true;
-    iceWallGroup.add(iceWall);
-
-    // Ice spikes
-    for (let i = 0; i < 80; i++) {
-      const angle = (i / 80) * Math.PI * 2;
-      const spikeHeight = 0.8 + Math.random() * 2.5;
-      const spikeWidth = 0.15 + Math.random() * 0.3;
-      const spikeGeometry = new THREE.ConeGeometry(spikeWidth, spikeHeight, 5);
-      const spikeMaterial = new THREE.MeshStandardMaterial({
-        color: 0xddeeff,
-        emissive: 0x334466,
-        emissiveIntensity: 0.1,
-        roughness: 0.2,
-        metalness: 0.3,
-        transparent: true,
-        opacity: 0.85,
-      });
-      const spike = new THREE.Mesh(spikeGeometry, spikeMaterial);
-      const r = earthRadius + 0.3 + (Math.random() - 0.5) * 0.8;
-      spike.position.x = Math.cos(angle) * r;
-      spike.position.z = Math.sin(angle) * r;
-      spike.position.y = spikeHeight / 2 + 0.3;
-      spike.rotation.z = (Math.random() - 0.5) * 0.3;
-      spike.rotation.x = (Math.random() - 0.5) * 0.3;
-      iceWallGroup.add(spike);
-    }
-    scene.add(iceWallGroup);
 
     // === DOME (Firmament) ===
     const domeRadius = 28;
@@ -235,8 +246,9 @@ function App() {
     const starsGeometry = new THREE.BufferGeometry();
     const starPositions: number[] = [];
     const starColors: number[] = [];
+    const starSizes: number[] = [];
 
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 5000; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.random() * Math.PI * 0.47;
       const r = domeRadius - 0.5;
@@ -248,24 +260,40 @@ function App() {
       );
 
       const colorType = Math.random();
-      if (colorType < 0.6) {
+      if (colorType < 0.5) {
         starColors.push(1, 1, 0.95);
-      } else if (colorType < 0.8) {
+      } else if (colorType < 0.7) {
         starColors.push(0.8, 0.85, 1);
-      } else {
+      } else if (colorType < 0.85) {
         starColors.push(1, 0.95, 0.8);
+      } else if (colorType < 0.95) {
+        starColors.push(1, 0.7, 0.5);
+      } else {
+        starColors.push(0.7, 0.8, 1);
+      }
+
+      // Variable star sizes
+      const sizeType = Math.random();
+      if (sizeType < 0.8) {
+        starSizes.push(0.15);
+      } else if (sizeType < 0.95) {
+        starSizes.push(0.3);
+      } else {
+        starSizes.push(0.5);
       }
     }
 
     starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
     starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+    starsGeometry.setAttribute('size', new THREE.Float32BufferAttribute(starSizes, 1));
 
     const starsMaterial = new THREE.PointsMaterial({
-      size: 0.2,
+      size: 0.25,
       vertexColors: true,
       transparent: true,
-      opacity: 0.9,
+      opacity: 1,
       sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
     });
     const stars = new THREE.Points(starsGeometry, starsMaterial);
     scene.add(stars);
@@ -273,39 +301,50 @@ function App() {
     // === SUN ===
     const sunGroup = new THREE.Group();
 
-    // Sun core
-    const sunGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffee44 });
+    // Sun core with gradient
+    const sunGeometry = new THREE.SphereGeometry(1.2, 64, 64);
+    const sunMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xffffaa,
+    });
     const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
     sunGroup.add(sunMesh);
 
-    // Sun inner glow
-    const sunGlow1Geometry = new THREE.SphereGeometry(2.0, 32, 32);
+    // Sun corona (inner glow)
+    const sunGlow1Geometry = new THREE.SphereGeometry(1.6, 64, 64);
     const sunGlow1Material = new THREE.MeshBasicMaterial({
-      color: 0xffcc00,
+      color: 0xffdd44,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.5,
     });
     sunGroup.add(new THREE.Mesh(sunGlow1Geometry, sunGlow1Material));
 
-    // Sun outer glow
-    const sunGlow2Geometry = new THREE.SphereGeometry(3.0, 32, 32);
+    // Sun outer corona
+    const sunGlow2Geometry = new THREE.SphereGeometry(2.2, 64, 64);
     const sunGlow2Material = new THREE.MeshBasicMaterial({
-      color: 0xff8800,
+      color: 0xffaa00,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.25,
     });
     sunGroup.add(new THREE.Mesh(sunGlow2Geometry, sunGlow2Material));
 
+    // Sun soft halo
+    const sunHaloGeometry = new THREE.SphereGeometry(3.0, 64, 64);
+    const sunHaloMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff8800,
+      transparent: true,
+      opacity: 0.1,
+    });
+    sunGroup.add(new THREE.Mesh(sunHaloGeometry, sunHaloMaterial));
+
     // Sun point light
-    const sunLight = new THREE.PointLight(0xffdd88, 3, 60);
+    const sunLight = new THREE.PointLight(0xffdd88, 5, 80);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunGroup.add(sunLight);
 
     // Sun spotlight (beam down)
-    const sunSpot = new THREE.SpotLight(0xffee88, 2, 40, Math.PI / 5, 0.8, 1);
+    const sunSpot = new THREE.SpotLight(0xffee88, 4, 60, Math.PI / 4, 0.6, 1);
     sunSpot.castShadow = true;
     const spotTarget = new THREE.Object3D();
     spotTarget.position.set(0, -10, 0);
@@ -316,91 +355,74 @@ function App() {
     sunGroup.position.set(10, 8, 0);
     scene.add(sunGroup);
 
-    // === SUN RAYS ===
-    const sunRaysGroup = new THREE.Group();
-    const rayCount = 12;
-    for (let i = 0; i < rayCount; i++) {
-      const angle = (i / rayCount) * Math.PI * 2;
-      const rayLength = 2 + Math.random() * 1.5;
-      const rayGeometry = new THREE.CylinderGeometry(0.02, 0.08, rayLength, 4);
-      const rayMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffdd44,
-        transparent: true,
-        opacity: 0.6,
-      });
-      const ray = new THREE.Mesh(rayGeometry, rayMaterial);
-      ray.position.x = Math.cos(angle) * 2;
-      ray.position.z = Math.sin(angle) * 2;
-      ray.rotation.z = -Math.PI / 2 + angle;
-      sunRaysGroup.add(ray);
-    }
-    scene.add(sunRaysGroup);
+
 
     // === SUN ORBIT RING (visual indicator) ===
-    const sunOrbitPoints: THREE.Vector3[] = [];
-    for (let i = 0; i <= 128; i++) {
-      const angle = (i / 128) * Math.PI * 2;
-      sunOrbitPoints.push(new THREE.Vector3(
-        Math.cos(angle) * 7,
-        8,
-        Math.sin(angle) * 7
-      ));
-    }
-    const sunOrbitGeometry = new THREE.BufferGeometry().setFromPoints(sunOrbitPoints);
-    const sunOrbitMaterial = new THREE.LineBasicMaterial({
+    const sunOrbitInner = 6.7;
+    const sunOrbitOuter = 7.3;
+    const sunOrbitGeometry = new THREE.RingGeometry(sunOrbitInner, sunOrbitOuter, 128);
+    const sunOrbitMaterial = new THREE.MeshBasicMaterial({
       color: 0xffaa00,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
     });
-    const sunOrbitRing = new THREE.Line(sunOrbitGeometry, sunOrbitMaterial);
+    const sunOrbitRing = new THREE.Mesh(sunOrbitGeometry, sunOrbitMaterial);
+    sunOrbitRing.rotation.x = -Math.PI / 2;
+    sunOrbitRing.position.y = 8;
     scene.add(sunOrbitRing);
 
     // === MOON ===
     const moonGroup = new THREE.Group();
 
-    const moonGeometry = new THREE.SphereGeometry(0.9, 32, 32);
+    const moonGeometry = new THREE.SphereGeometry(0.8, 64, 64);
     const moonMaterial = new THREE.MeshStandardMaterial({
-      color: 0xccccee,
-      emissive: 0x334455,
-      emissiveIntensity: 0.3,
-      roughness: 0.9,
-      metalness: 0,
+      color: 0xeeeeff,
+      emissive: 0x445566,
+      emissiveIntensity: 0.4,
+      roughness: 0.8,
+      metalness: 0.1,
     });
     moonGroup.add(new THREE.Mesh(moonGeometry, moonMaterial));
 
-    // Moon glow
-    const moonGlowGeometry = new THREE.SphereGeometry(1.3, 32, 32);
+    // Moon soft glow
+    const moonGlowGeometry = new THREE.SphereGeometry(1.1, 64, 64);
     const moonGlowMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8888cc,
+      color: 0xaabbdd,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.2,
     });
     moonGroup.add(new THREE.Mesh(moonGlowGeometry, moonGlowMaterial));
 
+    // Moon outer glow
+    const moonHaloGeometry = new THREE.SphereGeometry(1.5, 64, 64);
+    const moonHaloMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8899bb,
+      transparent: true,
+      opacity: 0.08,
+    });
+    moonGroup.add(new THREE.Mesh(moonHaloGeometry, moonHaloMaterial));
+
     // Moon light
-    const moonLight = new THREE.PointLight(0x8888bb, 0.5, 25);
+    const moonLight = new THREE.PointLight(0x8888bb, 0.8, 30);
     moonGroup.add(moonLight);
 
     moonGroup.position.set(-8, 10, 5);
     scene.add(moonGroup);
 
     // === MOON ORBIT RING ===
-    const moonOrbitPoints: THREE.Vector3[] = [];
-    for (let i = 0; i <= 128; i++) {
-      const angle = (i / 128) * Math.PI * 2;
-      moonOrbitPoints.push(new THREE.Vector3(
-        Math.cos(angle) * 10,
-        10,
-        Math.sin(angle) * 10
-      ));
-    }
-    const moonOrbitGeometry = new THREE.BufferGeometry().setFromPoints(moonOrbitPoints);
-    const moonOrbitMaterial = new THREE.LineBasicMaterial({
-      color: 0x6666aa,
+    const moonOrbitInner = 9.7;
+    const moonOrbitOuter = 10.3;
+    const moonOrbitGeometry = new THREE.RingGeometry(moonOrbitInner, moonOrbitOuter, 128);
+    const moonOrbitMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8888cc,
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
     });
-    const moonOrbitRing = new THREE.Line(moonOrbitGeometry, moonOrbitMaterial);
+    const moonOrbitRing = new THREE.Mesh(moonOrbitGeometry, moonOrbitMaterial);
+    moonOrbitRing.rotation.x = -Math.PI / 2;
+    moonOrbitRing.position.y = 10;
     scene.add(moonOrbitRing);
 
     // === LIGHT CONE ===
@@ -476,22 +498,7 @@ function App() {
     }
     scene.add(gridGroup);
 
-    // === NORTH POLE marker (no flag!) ===
-    const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8);
-    const poleMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff3333,
-      emissive: 0xff0000,
-      emissiveIntensity: 0.3,
-    });
-    const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-    pole.position.y = 0.75;
-    scene.add(pole);
 
-    // Pole top sphere
-    const poleTopGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-    const poleTop = new THREE.Mesh(poleTopGeometry, poleMaterial);
-    poleTop.position.y = 1.6;
-    scene.add(poleTop);
 
     // === FIRMAMENT LABEL ===
     const firmamentLabel = createTextSprite('✦ ТВЕРДЬ (FIRMAMENT) ✦', 4);
@@ -530,7 +537,7 @@ function App() {
       moon: moonGroup,
       stars,
       domeGroup,
-      sunRays: sunRaysGroup,
+
       nightOverlay,
       lightCone,
       sunOrbitRing,
@@ -590,9 +597,7 @@ function App() {
       updateOrbitRing(ref.sunOrbitRing, sunRadius, sunHeight);
 
       // Sun rays follow sun
-      ref.sunRays.position.copy(ref.sun.position);
-      ref.sunRays.rotation.y = t * 0.5;
-      ref.sunRays.rotation.z = Math.sin(t) * 0.2;
+
 
       // Light cone follows sun
       lightCone.position.x = ref.sun.position.x;
@@ -619,8 +624,11 @@ function App() {
       // Update moon orbit ring
       updateOrbitRing(ref.moonOrbitRing, moonRadius, moonHeight);
 
-      // Night overlay rotation (opposite to sun)
-      ref.nightOverlay.rotation.y = -sunAngle + Math.PI;
+      // Update night overlay shader with sun position
+      const nightMaterial = ref.nightOverlay.material as THREE.ShaderMaterial;
+      if (nightMaterial.uniforms && nightMaterial.uniforms.sunPosition) {
+        nightMaterial.uniforms.sunPosition.value.copy(ref.sun.position);
+      }
 
       // Stars slow rotation
       ref.stars.rotation.y = t * 0.05;
@@ -630,6 +638,11 @@ function App() {
         const hours = ((t % 24) + 24) % 24;
         const days = Math.floor(((t / 24) % 365) + 365) % 365;
         timeDisplayRef.current.textContent = `${hours.toFixed(1)}ч | День ${days}`;
+      }
+
+      // Update time slider via DOM (only when playing)
+      if (ref.isPlaying && timeSliderRef.current) {
+        timeSliderRef.current.value = String(t % 100);
       }
 
       ref.controls.update();
@@ -686,11 +699,7 @@ function App() {
     }
   }, [showDome]);
 
-  useEffect(() => {
-    if (sceneRef.current) {
-      sceneRef.current.sunRays.visible = showSunRays;
-    }
-  }, [showSunRays]);
+
 
   useEffect(() => {
     if (sceneRef.current) {
@@ -712,225 +721,193 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-gray-950">
-      {/* 3D Canvas */}
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="w-full h-screen flex flex-col bg-gray-950">
+      {/* Верхняя часть: 3D модель */}
+      <div className="flex-1 relative bg-gray-950 overflow-hidden">
+        {/* 3D Canvas */}
+        <div ref={containerRef} className="w-full h-full" />
+        
+        {/* Заголовок */}
+        <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white border border-blue-500/50">
+          <h1 className="text-lg font-bold text-blue-300">
+            🌍 Модель Плоской Земли
+          </h1>
+        </div>
 
-      {/* Title */}
-      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50 max-w-xs">
-        <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-          🌍 Модель Плоской Земли
-        </h1>
-        <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
-          Интерактивная 3D визуализация
-        </p>
-      </div>
-
-      {/* Info Panel */}
-      <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50 max-w-[200px] sm:max-w-xs">
-        <h3 className="text-xs sm:text-sm font-bold text-blue-300 mb-2">Элементы модели:</h3>
-        <ul className="text-[10px] sm:text-xs text-gray-300 space-y-0.5">
-          <li>☀️ Солнце — независимая орбита</li>
-          <li>🌙 Луна — независимая орбита</li>
-          <li>⭐ Звёзды — на куполе</li>
-          <li>🫧 Купол (твердь)</li>
-          <li>🧊 Ледяная стена</li>
-          <li>📍 Сев. полюс — в центре</li>
-        </ul>
-        <div className="mt-2 pt-2 border-t border-gray-700/50">
-          <p className="text-[9px] sm:text-[10px] text-gray-500">
-            🖱️ ЛКМ — вращение | Колёсико — зум | ПКМ — сдвиг
-          </p>
+        {/* Время */}
+        <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white border border-blue-500/50">
+          <div ref={timeDisplayRef} className="text-base font-mono text-blue-300">
+            0.0ч | День 0
+          </div>
         </div>
       </div>
 
-      {/* Time display */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-lg px-3 py-1.5 text-white border border-blue-900/50">
-        <div className="text-[10px] text-gray-400 text-center">Время модели</div>
-        <div ref={timeDisplayRef} className="text-sm font-mono text-blue-300 text-center">
-          0.0ч | День 0
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Playback controls */}
-          <div className="flex items-center gap-1">
-            {/* Rewind */}
-            <button
-              onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
-              className={`px-2 py-2 rounded-lg text-sm transition-all ${
-                timeDirection === -1 && isPlaying
-                  ? 'bg-red-600 shadow-lg shadow-red-900/30'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-              title="Перемотка назад"
-            >
-              ⏪
-            </button>
-            {/* Play/Pause */}
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`px-3 py-2 rounded-lg font-medium text-sm transition-all ${
-                isPlaying
-                  ? 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/30'
-                  : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/30'
-              }`}
-            >
-              {isPlaying ? '⏸' : '▶'}
-            </button>
-            {/* Forward */}
-            <button
-              onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
-              className={`px-2 py-2 rounded-lg text-sm transition-all ${
-                timeDirection === 1 && isPlaying
-                  ? 'bg-green-600 shadow-lg shadow-green-900/30'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-              title="Перемотка вперёд"
-            >
-              ⏩
-            </button>
-            {/* Step controls */}
-            <button
-              onClick={() => {
-                if (sceneRef.current) {
-                  sceneRef.current.time -= 1;
-                }
-              }}
-              className="px-2 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all"
-              title="Шаг назад"
-            >
-              ◀
-            </button>
-            <button
-              onClick={() => {
-                if (sceneRef.current) {
-                  sceneRef.current.time += 1;
-                }
-              }}
-              className="px-2 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all"
-              title="Шаг вперёд"
-            >
-              ▶
-            </button>
-          </div>
-
-          {/* Speed Control */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-400 hidden sm:inline">Скорость:</span>
-            <button
-              onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
-              className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
-            >
-              ÷2
-            </button>
-            <span className="px-2 py-1.5 bg-gray-800 rounded text-xs font-mono min-w-[50px] text-center text-blue-300">
-              {timeSpeed.toFixed(1)}x
-            </span>
-            <button
-              onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
-              className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
-            >
-              ×2
-            </button>
-          </div>
-
-          {/* Speed presets */}
-          <div className="flex gap-0.5">
-            {[0.25, 0.5, 1, 2, 5, 10, 20].map(speed => (
+      {/* Нижняя часть: Панель управления */}
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-black border-t border-cyan-500/30 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-8 py-5 space-y-4">
+          {/* Row 1: Time Control */}
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
               <button
-                key={speed}
-                onClick={() => setTimeSpeed(speed)}
-                className={`px-1.5 py-1 rounded text-[10px] sm:text-xs transition-all ${
-                  Math.abs(timeSpeed - speed) < 0.01
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'bg-gray-700/80 hover:bg-gray-600 text-gray-300'
+                onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
+                className={`relative px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 overflow-hidden group ${
+                  timeDirection === -1 && isPlaying
+                    ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/50 scale-105'
+                    : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 hover:from-red-600 hover:to-red-700 hover:text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105'
                 }`}
               >
-                {speed}x
+                <span className="relative z-10">⏪ Назад</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
-            ))}
+              
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`relative px-10 py-3 rounded-lg text-base font-bold transition-all duration-300 overflow-hidden group ${
+                  isPlaying
+                    ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-500/50 hover:shadow-xl hover:shadow-amber-500/60'
+                    : 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/60'
+                }`}
+              >
+                <span className="relative z-10">{isPlaying ? '⏸ Пауза' : '▶ Старт'}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+              
+              <button
+                onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
+                className={`relative px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 overflow-hidden group ${
+                  timeDirection === 1 && isPlaying
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/50 scale-105'
+                    : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 hover:from-emerald-600 hover:to-emerald-700 hover:text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-105'
+                }`}
+              >
+                <span className="relative z-10">Вперёд ⏩</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+            </div>
+
+            <div className="h-12 w-px bg-gradient-to-b from-transparent via-slate-600 to-transparent"></div>
+
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
+              <button
+                onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
+                className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-cyan-500/50 flex items-center justify-center group overflow-hidden"
+              >
+                <span className="relative z-10 text-xl">◀</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+              <button
+                onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
+                className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-cyan-500/50 flex items-center justify-center group overflow-hidden"
+              >
+                <span className="relative z-10 text-xl">▶</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+            </div>
           </div>
 
-          {/* Toggles */}
-          <div className="flex gap-1.5 ml-auto">
-            <button
-              onClick={() => setShowDome(!showDome)}
-              className={`px-2 py-1.5 rounded-lg text-xs transition-all ${
-                showDome ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🫧 Купол
-            </button>
-            <button
-              onClick={() => setShowSunRays(!showSunRays)}
-              className={`px-2 py-1.5 rounded-lg text-xs transition-all ${
-                showSunRays ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ☀️ Лучи
-            </button>
-            <button
-              onClick={() => setDayNight(!dayNight)}
-              className={`px-2 py-1.5 rounded-lg text-xs transition-all ${
-                dayNight ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🌗 День/Ночь
-            </button>
-          </div>
-        </div>
+          {/* Row 2: Speed Control */}
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
+              <span className="text-sm text-slate-400 font-semibold">Скорость:</span>
+              <button
+                onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
+                className="relative w-11 h-11 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-blue-600 hover:to-blue-700 text-white text-xl font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50 flex items-center justify-center group overflow-hidden"
+              >
+                <span className="relative z-10">−</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+              <div className="px-6 py-2.5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-blue-500/40 min-w-[100px] text-center shadow-inner">
+                <span className="text-lg font-mono font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  {timeSpeed.toFixed(1)}x
+                </span>
+              </div>
+              <button
+                onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
+                className="relative w-11 h-11 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-blue-600 hover:to-blue-700 text-white text-xl font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50 flex items-center justify-center group overflow-hidden"
+              >
+                <span className="relative z-10">+</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+            </div>
+            
+            <div className="h-12 w-px bg-gradient-to-b from-transparent via-slate-600 to-transparent"></div>
 
-        {/* Season control row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-gray-700/50">
-          <span className="text-xs text-gray-400">Время года:</span>
-          <span className="text-sm font-medium text-amber-300 min-w-[140px]">
-            {getSeasonName(season)}
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={season}
-            onChange={(e) => setSeason(parseFloat(e.target.value))}
-            className="flex-1 min-w-[120px] max-w-[300px] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-          <div className="flex gap-1">
-            <button
-              onClick={() => setSeason(0)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season < 0.125 || season >= 0.875 ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🌸 Весна
-            </button>
-            <button
-              onClick={() => setSeason(0.25)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season >= 0.125 && season < 0.375 ? 'bg-yellow-600' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ☀️ Лето
-            </button>
-            <button
-              onClick={() => setSeason(0.5)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season >= 0.375 && season < 0.625 ? 'bg-orange-600' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🍂 Осень
-            </button>
-            <button
-              onClick={() => setSeason(0.75)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season >= 0.625 && season < 0.875 ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ❄️ Зима
-            </button>
+            <div className="flex items-center gap-2 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
+              {[0.5, 1, 2, 5, 10].map(speed => (
+                <button
+                  key={speed}
+                  onClick={() => setTimeSpeed(speed)}
+                  className={`relative px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 overflow-hidden group ${
+                    Math.abs(timeSpeed - speed) < 0.01
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+                      : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-300 hover:from-blue-600 hover:to-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105'
+                  }`}
+                >
+                  <span className="relative z-10">{speed}x</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 3: Time Slider */}
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-4 bg-slate-800/50 rounded-xl p-4 backdrop-blur-sm border border-slate-700/50 w-full max-w-2xl">
+              <span className="text-sm text-slate-400 font-semibold whitespace-nowrap">Время:</span>
+              <input
+                ref={timeSliderRef}
+                type="range"
+                min="0"
+                max="24"
+                step="0.01"
+                defaultValue="0"
+                onChange={(e) => {
+                  const newTime = parseFloat(e.target.value);
+                  if (sceneRef.current) {
+                    sceneRef.current.time = newTime;
+                  }
+                }}
+                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+              <span className="text-xs text-slate-500 whitespace-nowrap">±24ч</span>
+            </div>
+          </div>
+
+          {/* Row 4: Season Control */}
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-4 bg-slate-800/50 rounded-xl p-4 backdrop-blur-sm border border-slate-700/50">
+              <span className="text-sm text-slate-400 font-semibold">Сезон:</span>
+              <div className="px-6 py-2.5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-amber-500/40 min-w-[160px] text-center shadow-inner">
+                <span className="text-sm font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                  {getSeasonName(season)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={season}
+                onChange={(e) => setSeason(parseFloat(e.target.value))}
+                className="w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <div className="flex gap-2">
+                {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSeason(i * 0.25)}
+                    className={`relative w-12 h-12 rounded-lg text-xl transition-all duration-300 flex items-center justify-center overflow-hidden group ${
+                      Math.abs(season - i * 0.25) < 0.125
+                        ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/50 scale-110'
+                        : 'bg-gradient-to-br from-slate-700 to-slate-800 hover:from-amber-600 hover:to-amber-700 hover:shadow-lg hover:shadow-amber-500/30 hover:scale-105'
+                    }`}
+                  >
+                    <span className="relative z-10">{icon}</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -939,19 +916,13 @@ function App() {
 }
 
 // Update orbit ring geometry
-function updateOrbitRing(ring: THREE.Line, radius: number, height: number) {
-  const points: THREE.Vector3[] = [];
-  for (let i = 0; i <= 128; i++) {
-    const angle = (i / 128) * Math.PI * 2;
-    points.push(new THREE.Vector3(
-      Math.cos(angle) * radius,
-      height,
-      Math.sin(angle) * radius
-    ));
-  }
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  ring.geometry.dispose();
-  ring.geometry = geometry;
+function updateOrbitRing(ring: THREE.Object3D, radius: number, height: number) {
+  const mesh = ring as THREE.Mesh;
+  const thickness = 0.3;
+  const newGeometry = new THREE.RingGeometry(radius - thickness, radius + thickness, 128);
+  mesh.geometry.dispose();
+  mesh.geometry = newGeometry;
+  mesh.position.y = height;
 }
 
 // Fallback earth texture
