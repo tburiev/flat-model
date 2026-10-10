@@ -746,50 +746,60 @@ function App() {
       <div 
         className="bg-gradient-to-b from-slate-900 via-slate-900 to-black border-t border-cyan-500/30 shadow-2xl"
         style={{ 
-          paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 10px)',
           marginBottom: 'env(safe-area-inset-bottom, 0px)'
         }}
       >
-        <div className="max-w-7xl mx-auto px-1 sm:px-8 py-2 sm:py-5 space-y-1 sm:space-y-4">
+        <div style={{ 
+          maxWidth: '100%',
+          margin: '0 auto',
+          padding: '8px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
+        }}>
           {/* Row 1: Time Control */}
-          <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <div className="control-group">
               <button
                 onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
                 className={`btn-control btn-back ${timeDirection === -1 && isPlaying ? 'active' : ''}`}
+                style={{ padding: '6px 12px', fontSize: '12px' }}
               >
-                <span className="hidden sm:inline">⏪ Назад</span>
-                <span className="sm:hidden">⏪</span>
+                ⏪
               </button>
               
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
                 className={`btn-control btn-play ${isPlaying ? 'playing' : ''}`}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
               >
-                {isPlaying ? '⏸ Пауза' : '▶ Старт'}
+                {isPlaying ? '⏸' : '▶'}
               </button>
               
               <button
                 onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
                 className={`btn-control btn-forward ${timeDirection === 1 && isPlaying ? 'active' : ''}`}
+                style={{ padding: '6px 12px', fontSize: '12px' }}
               >
-                <span className="hidden sm:inline">Вперёд ⏩</span>
-                <span className="sm:hidden">⏩</span>
+                ⏩
               </button>
             </div>
 
-            <div className="h-10 sm:h-12 w-px bg-gradient-to-b from-transparent via-slate-600 to-transparent"></div>
+            <div style={{ height: '32px', width: '1px', background: 'linear-gradient(to bottom, transparent, #475569, transparent)' }}></div>
 
             <div className="control-group">
               <button
                 onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
                 className="btn-control btn-step"
+                style={{ width: '32px', height: '32px', fontSize: '14px' }}
               >
                 ◀
               </button>
               <button
                 onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
                 className="btn-control btn-step"
+                style={{ width: '32px', height: '32px', fontSize: '14px' }}
               >
                 ▶
               </button>
@@ -797,13 +807,13 @@ function App() {
           </div>
 
           {/* Row 2: Speed Control */}
-          <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <div className="control-group">
-              <span className="text-sm text-slate-400 font-semibold">Скорость:</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Скорость:</span>
               <button
                 onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
                 className="btn-control btn-step"
-                style={{ width: '44px', height: '44px', fontSize: '20px' }}
+                style={{ width: '32px', height: '32px', fontSize: '16px' }}
               >
                 −
               </button>
@@ -813,13 +823,13 @@ function App() {
               <button
                 onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
                 className="btn-control btn-step"
-                style={{ width: '44px', height: '44px', fontSize: '20px' }}
+                style={{ width: '32px', height: '32px', fontSize: '16px' }}
               >
                 +
               </button>
             </div>
             
-            <div className="h-10 sm:h-12 w-px bg-gradient-to-b from-transparent via-slate-600 to-transparent"></div>
+            <div style={{ height: '32px', width: '1px', background: 'linear-gradient(to bottom, transparent, #475569, transparent)' }}></div>
 
             <div className="control-group">
               {[0.5, 1, 2, 5, 10].map(speed => (
@@ -827,6 +837,7 @@ function App() {
                   key={speed}
                   onClick={() => setTimeSpeed(speed)}
                   className={`btn-control btn-speed ${Math.abs(timeSpeed - speed) < 0.01 ? 'active' : ''}`}
+                  style={{ padding: '4px 10px', fontSize: '11px' }}
                 >
                   {speed}x
                 </button>
@@ -835,9 +846,9 @@ function App() {
           </div>
 
           {/* Row 3: Time Slider */}
-          <div className="flex items-center justify-center gap-1 sm:gap-4 flex-wrap">
-            <div className="control-group" style={{ width: '100%', maxWidth: '700px' }}>
-              <span className="text-xs sm:text-sm text-slate-400 font-semibold whitespace-nowrap">Время:</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="control-group" style={{ width: '100%', maxWidth: '600px', padding: '6px 10px' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>Время:</span>
               <input
                 ref={timeSliderRef}
                 type="range"
@@ -851,18 +862,18 @@ function App() {
                     sceneRef.current.time = newTime;
                   }
                 }}
-                className="flex-1 w-24 sm:w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                style={{ flex: 1, width: '100%', minWidth: '100px', height: '6px' }}
+                className="bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
-              <span className="text-xs text-slate-500 whitespace-nowrap hidden sm:inline">±24ч</span>
             </div>
           </div>
 
           {/* Row 4: Season Control */}
-          <div className="flex items-center justify-center gap-1 sm:gap-4 flex-wrap">
-            <div className="control-group">
-              <span className="text-xs sm:text-sm text-slate-400 font-semibold">Сезон:</span>
-              <div className="display-box season">
-                <span className="value">{getSeasonName(season)}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="control-group" style={{ padding: '6px 10px' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Сезон:</span>
+              <div className="display-box season" style={{ padding: '4px 10px', minWidth: '80px' }}>
+                <span className="value" style={{ fontSize: '11px' }}>{getSeasonName(season)}</span>
               </div>
               <input
                 type="range"
@@ -871,14 +882,16 @@ function App() {
                 step="0.01"
                 value={season}
                 onChange={(e) => setSeason(parseFloat(e.target.value))}
-                className="w-20 sm:w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                style={{ width: '100px', height: '6px' }}
+                className="bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
               />
-              <div className="flex gap-1">
+              <div style={{ display: 'flex', gap: '4px' }}>
                 {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
                   <button
                     key={i}
                     onClick={() => setSeason(i * 0.25)}
                     className={`btn-control btn-season ${Math.abs(season - i * 0.25) < 0.125 ? 'active' : ''}`}
+                    style={{ width: '32px', height: '32px', fontSize: '16px' }}
                   >
                     {icon}
                   </button>
