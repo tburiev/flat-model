@@ -11,7 +11,7 @@ interface SceneRefs {
   moon: THREE.Group;
   stars: THREE.Points;
   domeGroup: THREE.Group;
-  sunRays: THREE.Group;
+
   nightOverlay: THREE.Mesh;
   lightCone: THREE.Mesh;
   sunOrbitRing: THREE.Object3D;
@@ -31,11 +31,12 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [timeSpeed, setTimeSpeed] = useState(1);
   const [showDome, setShowDome] = useState(true);
-  const [showSunRays, setShowSunRays] = useState(true);
+
   const [dayNight, setDayNight] = useState(true);
   const [season, setSeason] = useState(0.25); // Start at summer solstice (northern hemisphere)
   const [timeDirection, setTimeDirection] = useState(1); // 1 = forward, -1 = backward
   const timeDirectionRef = useRef(1);
+  const timeSliderRef = useRef<HTMLInputElement>(null);
 
   // Keep ref in sync
   useEffect(() => {
@@ -77,16 +78,11 @@ function App() {
     controls.target.set(0, 2, 0);
 
     // === LIGHTING ===
-    const ambientLight = new THREE.AmbientLight(0x88aacc, 1.2);
+    const ambientLight = new THREE.AmbientLight(0x445566, 0.4);
     scene.add(ambientLight);
 
-    const hemisphereLight = new THREE.HemisphereLight(0xaaccee, 0x445566, 0.8);
+    const hemisphereLight = new THREE.HemisphereLight(0x667788, 0x223344, 0.3);
     scene.add(hemisphereLight);
-
-    // Additional fill light
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
-    fillLight.position.set(10, 20, 10);
-    scene.add(fillLight);
 
     // === FLAT EARTH DISK ===
     const earthRadius = 15;
@@ -148,37 +144,6 @@ function App() {
     nightOverlay.position.y = 0.01;
     scene.add(nightOverlay);
 
-    // === ICE WALL (Antarctica) ===
-    const iceWallGroup = new THREE.Group();
-
-    // Simple white border (cylinder ring)
-    const iceWallGeometry = new THREE.CylinderGeometry(earthRadius + 0.5, earthRadius + 0.5, 2, 128, 1, true);
-    const iceWallMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0x334455,
-      emissiveIntensity: 0.1,
-      roughness: 0.4,
-      metalness: 0.1,
-      side: THREE.DoubleSide,
-    });
-    const iceWall = new THREE.Mesh(iceWallGeometry, iceWallMaterial);
-    iceWall.position.y = 1;
-    iceWall.castShadow = true;
-    iceWallGroup.add(iceWall);
-
-    // Top cap of ice wall
-    const iceWallTopGeometry = new THREE.RingGeometry(earthRadius + 0.3, earthRadius + 0.7, 128);
-    const iceWallTopMaterial = new THREE.MeshStandardMaterial({
-      color: 0xeeeeff,
-      roughness: 0.3,
-      metalness: 0.1,
-      side: THREE.DoubleSide,
-    });
-    const iceWallTop = new THREE.Mesh(iceWallTopGeometry, iceWallTopMaterial);
-    iceWallTop.rotation.x = -Math.PI / 2;
-    iceWallTop.position.y = 2;
-    iceWallGroup.add(iceWallTop);
-    scene.add(iceWallGroup);
 
     // === DOME (Firmament) ===
     const domeRadius = 28;
@@ -226,8 +191,9 @@ function App() {
     const starsGeometry = new THREE.BufferGeometry();
     const starPositions: number[] = [];
     const starColors: number[] = [];
+    const starSizes: number[] = [];
 
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 5000; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.random() * Math.PI * 0.47;
       const r = domeRadius - 0.5;
@@ -239,24 +205,40 @@ function App() {
       );
 
       const colorType = Math.random();
-      if (colorType < 0.6) {
+      if (colorType < 0.5) {
         starColors.push(1, 1, 0.95);
-      } else if (colorType < 0.8) {
+      } else if (colorType < 0.7) {
         starColors.push(0.8, 0.85, 1);
-      } else {
+      } else if (colorType < 0.85) {
         starColors.push(1, 0.95, 0.8);
+      } else if (colorType < 0.95) {
+        starColors.push(1, 0.7, 0.5);
+      } else {
+        starColors.push(0.7, 0.8, 1);
+      }
+
+      // Variable star sizes
+      const sizeType = Math.random();
+      if (sizeType < 0.8) {
+        starSizes.push(0.15);
+      } else if (sizeType < 0.95) {
+        starSizes.push(0.3);
+      } else {
+        starSizes.push(0.5);
       }
     }
 
     starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
     starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+    starsGeometry.setAttribute('size', new THREE.Float32BufferAttribute(starSizes, 1));
 
     const starsMaterial = new THREE.PointsMaterial({
-      size: 0.2,
+      size: 0.25,
       vertexColors: true,
       transparent: true,
-      opacity: 0.9,
+      opacity: 1,
       sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
     });
     const stars = new THREE.Points(starsGeometry, starsMaterial);
     scene.add(stars);
@@ -264,39 +246,50 @@ function App() {
     // === SUN ===
     const sunGroup = new THREE.Group();
 
-    // Sun core
-    const sunGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffee44 });
+    // Sun core with gradient
+    const sunGeometry = new THREE.SphereGeometry(1.2, 64, 64);
+    const sunMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xffffaa,
+    });
     const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
     sunGroup.add(sunMesh);
 
-    // Sun inner glow
-    const sunGlow1Geometry = new THREE.SphereGeometry(2.0, 32, 32);
+    // Sun corona (inner glow)
+    const sunGlow1Geometry = new THREE.SphereGeometry(1.6, 64, 64);
     const sunGlow1Material = new THREE.MeshBasicMaterial({
-      color: 0xffcc00,
+      color: 0xffdd44,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.5,
     });
     sunGroup.add(new THREE.Mesh(sunGlow1Geometry, sunGlow1Material));
 
-    // Sun outer glow
-    const sunGlow2Geometry = new THREE.SphereGeometry(3.0, 32, 32);
+    // Sun outer corona
+    const sunGlow2Geometry = new THREE.SphereGeometry(2.2, 64, 64);
     const sunGlow2Material = new THREE.MeshBasicMaterial({
-      color: 0xff8800,
+      color: 0xffaa00,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.25,
     });
     sunGroup.add(new THREE.Mesh(sunGlow2Geometry, sunGlow2Material));
 
+    // Sun soft halo
+    const sunHaloGeometry = new THREE.SphereGeometry(3.0, 64, 64);
+    const sunHaloMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff8800,
+      transparent: true,
+      opacity: 0.1,
+    });
+    sunGroup.add(new THREE.Mesh(sunHaloGeometry, sunHaloMaterial));
+
     // Sun point light
-    const sunLight = new THREE.PointLight(0xffdd88, 3, 60);
+    const sunLight = new THREE.PointLight(0xffdd88, 5, 80);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunGroup.add(sunLight);
 
     // Sun spotlight (beam down)
-    const sunSpot = new THREE.SpotLight(0xffee88, 2, 40, Math.PI / 5, 0.8, 1);
+    const sunSpot = new THREE.SpotLight(0xffee88, 4, 60, Math.PI / 4, 0.6, 1);
     sunSpot.castShadow = true;
     const spotTarget = new THREE.Object3D();
     spotTarget.position.set(0, -10, 0);
@@ -307,25 +300,7 @@ function App() {
     sunGroup.position.set(10, 8, 0);
     scene.add(sunGroup);
 
-    // === SUN RAYS ===
-    const sunRaysGroup = new THREE.Group();
-    const rayCount = 12;
-    for (let i = 0; i < rayCount; i++) {
-      const angle = (i / rayCount) * Math.PI * 2;
-      const rayLength = 2 + Math.random() * 1.5;
-      const rayGeometry = new THREE.CylinderGeometry(0.02, 0.08, rayLength, 4);
-      const rayMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffdd44,
-        transparent: true,
-        opacity: 0.6,
-      });
-      const ray = new THREE.Mesh(rayGeometry, rayMaterial);
-      ray.position.x = Math.cos(angle) * 2;
-      ray.position.z = Math.sin(angle) * 2;
-      ray.rotation.z = -Math.PI / 2 + angle;
-      sunRaysGroup.add(ray);
-    }
-    scene.add(sunRaysGroup);
+
 
     // === SUN ORBIT RING (visual indicator) ===
     const sunOrbitInner = 6.7;
@@ -345,27 +320,36 @@ function App() {
     // === MOON ===
     const moonGroup = new THREE.Group();
 
-    const moonGeometry = new THREE.SphereGeometry(0.9, 32, 32);
+    const moonGeometry = new THREE.SphereGeometry(0.8, 64, 64);
     const moonMaterial = new THREE.MeshStandardMaterial({
-      color: 0xccccee,
-      emissive: 0x334455,
-      emissiveIntensity: 0.3,
-      roughness: 0.9,
-      metalness: 0,
+      color: 0xeeeeff,
+      emissive: 0x445566,
+      emissiveIntensity: 0.4,
+      roughness: 0.8,
+      metalness: 0.1,
     });
     moonGroup.add(new THREE.Mesh(moonGeometry, moonMaterial));
 
-    // Moon glow
-    const moonGlowGeometry = new THREE.SphereGeometry(1.3, 32, 32);
+    // Moon soft glow
+    const moonGlowGeometry = new THREE.SphereGeometry(1.1, 64, 64);
     const moonGlowMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8888cc,
+      color: 0xaabbdd,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.2,
     });
     moonGroup.add(new THREE.Mesh(moonGlowGeometry, moonGlowMaterial));
 
+    // Moon outer glow
+    const moonHaloGeometry = new THREE.SphereGeometry(1.5, 64, 64);
+    const moonHaloMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8899bb,
+      transparent: true,
+      opacity: 0.08,
+    });
+    moonGroup.add(new THREE.Mesh(moonHaloGeometry, moonHaloMaterial));
+
     // Moon light
-    const moonLight = new THREE.PointLight(0x8888bb, 0.5, 25);
+    const moonLight = new THREE.PointLight(0x8888bb, 0.8, 30);
     moonGroup.add(moonLight);
 
     moonGroup.position.set(-8, 10, 5);
@@ -513,7 +497,7 @@ function App() {
       moon: moonGroup,
       stars,
       domeGroup,
-      sunRays: sunRaysGroup,
+
       nightOverlay,
       lightCone,
       sunOrbitRing,
@@ -573,9 +557,7 @@ function App() {
       updateOrbitRing(ref.sunOrbitRing, sunRadius, sunHeight);
 
       // Sun rays follow sun
-      ref.sunRays.position.copy(ref.sun.position);
-      ref.sunRays.rotation.y = t * 0.5;
-      ref.sunRays.rotation.z = Math.sin(t) * 0.2;
+
 
       // Light cone follows sun
       lightCone.position.x = ref.sun.position.x;
@@ -613,6 +595,11 @@ function App() {
         const hours = ((t % 24) + 24) % 24;
         const days = Math.floor(((t / 24) % 365) + 365) % 365;
         timeDisplayRef.current.textContent = `${hours.toFixed(1)}ч | День ${days}`;
+      }
+
+      // Update time slider via DOM (only when playing)
+      if (ref.isPlaying && timeSliderRef.current) {
+        timeSliderRef.current.value = String(t % 100);
       }
 
       ref.controls.update();
@@ -669,11 +656,7 @@ function App() {
     }
   }, [showDome]);
 
-  useEffect(() => {
-    if (sceneRef.current) {
-      sceneRef.current.sunRays.visible = showSunRays;
-    }
-  }, [showSunRays]);
+
 
   useEffect(() => {
     if (sceneRef.current) {
@@ -814,7 +797,27 @@ function App() {
             </div>
           </div>
 
-          {/* Row 3: Season Control */}
+          {/* Row 3: Time Slider */}
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-sm text-gray-400 font-medium">Время:</span>
+            <input
+              ref={timeSliderRef}
+              type="range"
+              min="0"
+              max="100"
+              step="0.1"
+              defaultValue="0"
+              onChange={(e) => {
+                const newTime = parseFloat(e.target.value);
+                if (sceneRef.current) {
+                  sceneRef.current.time = newTime;
+                }
+              }}
+              className="w-96 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+          </div>
+
+          {/* Row 4: Season Control */}
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <span className="text-sm text-gray-400 font-medium">Сезон:</span>
             <div className="px-5 py-2 bg-gray-800 rounded-lg border border-amber-500/30 min-w-[150px] text-center">
