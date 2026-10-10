@@ -26,10 +26,10 @@ canvas {
 /* Button styles */
 .btn-control {
   position: relative;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   transition: all 0.3s ease;
   overflow: hidden;
   cursor: pointer;
@@ -37,7 +37,7 @@ canvas {
   outline: none;
   text-transform: none;
   letter-spacing: normal;
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 
@@ -90,8 +90,8 @@ canvas {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
-  padding: 8px 24px;
-  font-size: 14px;
+  padding: 6px 16px;
+  font-size: 13px;
 }
 
 .btn-play:hover {
@@ -126,15 +126,15 @@ canvas {
 }
 
 .btn-step {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
   color: white;
-  font-size: 16px;
+  font-size: 14px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -144,7 +144,7 @@ canvas {
 }
 
 .btn-speed {
-  padding: 6px 14px;
+  padding: 4px 10px;
   background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
   color: #cbd5e1;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
@@ -163,13 +163,13 @@ canvas {
 }
 
 .btn-season {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
@@ -189,28 +189,28 @@ canvas {
 .control-group {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: 4px;
+  padding: 4px 6px;
   background: rgba(30, 41, 59, 0.5);
-  border-radius: 8px;
+  border-radius: 6px;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
 /* Display box */
 .display-box {
-  padding: 4px 12px;
+  padding: 3px 8px;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid rgba(59, 130, 246, 0.4);
-  min-width: 60px;
+  min-width: 50px;
   text-align: center;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .display-box .value {
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   background: linear-gradient(90deg, #60a5fa, #22d3ee);
   -webkit-background-clip: text;

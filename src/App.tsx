@@ -753,18 +753,18 @@ function App() {
         <div style={{ 
           maxWidth: '100%',
           margin: '0 auto',
-          padding: '8px 8px',
+          padding: '4px 6px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px'
+          gap: '2px'
         }}>
           {/* Row 1: Time Control */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div className="control-group">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+            <div className="control-group" style={{ padding: '3px 4px', gap: '3px' }}>
               <button
                 onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
                 className={`btn-control btn-back ${timeDirection === -1 && isPlaying ? 'active' : ''}`}
-                style={{ padding: '6px 12px', fontSize: '12px' }}
+                style={{ padding: '4px 8px', fontSize: '11px' }}
               >
                 ⏪
               </button>
@@ -772,7 +772,7 @@ function App() {
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
                 className={`btn-control btn-play ${isPlaying ? 'playing' : ''}`}
-                style={{ padding: '6px 16px', fontSize: '13px' }}
+                style={{ padding: '4px 10px', fontSize: '12px' }}
               >
                 {isPlaying ? '⏸' : '▶'}
               </button>
@@ -780,26 +780,26 @@ function App() {
               <button
                 onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
                 className={`btn-control btn-forward ${timeDirection === 1 && isPlaying ? 'active' : ''}`}
-                style={{ padding: '6px 12px', fontSize: '12px' }}
+                style={{ padding: '4px 8px', fontSize: '11px' }}
               >
                 ⏩
               </button>
             </div>
 
-            <div style={{ height: '32px', width: '1px', background: 'linear-gradient(to bottom, transparent, #475569, transparent)' }}></div>
+            <div style={{ height: '24px', width: '1px', background: 'linear-gradient(to bottom, transparent, #475569, transparent)' }}></div>
 
-            <div className="control-group">
+            <div className="control-group" style={{ padding: '3px 4px', gap: '3px' }}>
               <button
                 onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
                 className="btn-control btn-step"
-                style={{ width: '32px', height: '32px', fontSize: '14px' }}
+                style={{ width: '26px', height: '26px', fontSize: '12px' }}
               >
                 ◀
               </button>
               <button
                 onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
                 className="btn-control btn-step"
-                style={{ width: '32px', height: '32px', fontSize: '14px' }}
+                style={{ width: '26px', height: '26px', fontSize: '12px' }}
               >
                 ▶
               </button>
@@ -807,37 +807,37 @@ function App() {
           </div>
 
           {/* Row 2: Speed Control */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div className="control-group">
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Скорость:</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+            <div className="control-group" style={{ padding: '3px 4px', gap: '3px' }}>
+              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>Скорость:</span>
               <button
                 onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
                 className="btn-control btn-step"
-                style={{ width: '32px', height: '32px', fontSize: '16px' }}
+                style={{ width: '26px', height: '26px', fontSize: '13px' }}
               >
                 −
               </button>
-              <div className="display-box">
-                <span className="value">{timeSpeed.toFixed(1)}x</span>
+              <div className="display-box" style={{ padding: '2px 8px', minWidth: '50px' }}>
+                <span className="value" style={{ fontSize: '11px' }}>{timeSpeed.toFixed(1)}x</span>
               </div>
               <button
                 onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
                 className="btn-control btn-step"
-                style={{ width: '32px', height: '32px', fontSize: '16px' }}
+                style={{ width: '26px', height: '26px', fontSize: '13px' }}
               >
                 +
               </button>
             </div>
             
-            <div style={{ height: '32px', width: '1px', background: 'linear-gradient(to bottom, transparent, #475569, transparent)' }}></div>
+            <div style={{ height: '24px', width: '1px', background: 'linear-gradient(to bottom, transparent, #475569, transparent)' }}></div>
 
-            <div className="control-group">
+            <div className="control-group" style={{ padding: '3px 4px', gap: '3px' }}>
               {[0.5, 1, 2, 5, 10].map(speed => (
                 <button
                   key={speed}
                   onClick={() => setTimeSpeed(speed)}
                   className={`btn-control btn-speed ${Math.abs(timeSpeed - speed) < 0.01 ? 'active' : ''}`}
-                  style={{ padding: '4px 10px', fontSize: '11px' }}
+                  style={{ padding: '3px 8px', fontSize: '10px' }}
                 >
                   {speed}x
                 </button>
@@ -846,9 +846,9 @@ function App() {
           </div>
 
           {/* Row 3: Time Slider */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div className="control-group" style={{ width: '100%', maxWidth: '600px', padding: '6px 10px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>Время:</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+            <div className="control-group" style={{ width: '100%', maxWidth: '600px', padding: '3px 6px', gap: '4px' }}>
+              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>Время:</span>
               <input
                 ref={timeSliderRef}
                 type="range"
@@ -862,18 +862,18 @@ function App() {
                     sceneRef.current.time = newTime;
                   }
                 }}
-                style={{ flex: 1, width: '100%', minWidth: '100px', height: '6px' }}
+                style={{ flex: 1, width: '100%', minWidth: '100px', height: '4px' }}
                 className="bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
             </div>
           </div>
 
           {/* Row 4: Season Control */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div className="control-group" style={{ padding: '6px 10px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Сезон:</span>
-              <div className="display-box season" style={{ padding: '4px 10px', minWidth: '80px' }}>
-                <span className="value" style={{ fontSize: '11px' }}>{getSeasonName(season)}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+            <div className="control-group" style={{ padding: '3px 6px', gap: '4px' }}>
+              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>Сезон:</span>
+              <div className="display-box season" style={{ padding: '2px 8px', minWidth: '70px' }}>
+                <span className="value" style={{ fontSize: '10px' }}>{getSeasonName(season)}</span>
               </div>
               <input
                 type="range"
@@ -882,16 +882,16 @@ function App() {
                 step="0.01"
                 value={season}
                 onChange={(e) => setSeason(parseFloat(e.target.value))}
-                style={{ width: '100px', height: '6px' }}
+                style={{ width: '80px', height: '4px' }}
                 className="bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
               />
-              <div style={{ display: 'flex', gap: '4px' }}>
+              <div style={{ display: 'flex', gap: '2px' }}>
                 {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
                   <button
                     key={i}
                     onClick={() => setSeason(i * 0.25)}
                     className={`btn-control btn-season ${Math.abs(season - i * 0.25) < 0.125 ? 'active' : ''}`}
-                    style={{ width: '32px', height: '32px', fontSize: '16px' }}
+                    style={{ width: '28px', height: '28px', fontSize: '14px' }}
                   >
                     {icon}
                   </button>
