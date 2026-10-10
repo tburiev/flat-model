@@ -621,15 +621,6 @@ function App() {
 
     animate(performance.now());
 
-    // Принудительный resize после инициализации
-    setTimeout(() => {
-      const w = containerRef.current?.clientWidth || 800;
-      const h = containerRef.current?.clientHeight || 600;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    }, 150);
-
     // Handle resize
     const handleResize = () => {
       if (!containerRef.current || !sceneRef.current) return;
@@ -655,17 +646,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
-    
-    // Небольшая задержка чтобы контейнер получил размеры
-    const timer = setTimeout(() => {
-      cleanup = initScene();
-    }, 100);
-    
-    return () => {
-      clearTimeout(timer);
-      if (cleanup) cleanup();
-    };
+    const cleanup = initScene();
+    return cleanup;
   }, [initScene]);
 
   useEffect(() => {
@@ -713,26 +695,29 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen relative bg-gray-950">
-      {/* 3D Canvas - занимает всё пространство */}
-      <div ref={containerRef} className="absolute inset-0" style={{ bottom: '200px', zIndex: 1 }} />
-      
-      {/* Title */}
-      <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md rounded-xl px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 20 }}>
-        <h1 className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-          🌍 Модель Плоской Земли
-        </h1>
-      </div>
+    <div className="w-full h-screen flex flex-col bg-gray-950">
+      {/* Верхняя часть: 3D модель */}
+      <div className="flex-1 relative bg-gray-950 overflow-hidden">
+        {/* 3D Canvas */}
+        <div ref={containerRef} className="w-full h-full" />
+        
+        {/* Заголовок */}
+        <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white border border-blue-500/50">
+          <h1 className="text-lg font-bold text-blue-300">
+            🌍 Модель Плоской Земли
+          </h1>
+        </div>
 
-      {/* Time display */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-md rounded-lg px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 20 }}>
-        <div ref={timeDisplayRef} className="text-base font-mono text-blue-300 text-center">
-          0.0ч | День 0
+        {/* Время */}
+        <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white border border-blue-500/50">
+          <div ref={timeDisplayRef} className="text-base font-mono text-blue-300">
+            0.0ч | День 0
+          </div>
         </div>
       </div>
 
-      {/* Control Panel - фиксированная внизу */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black border-t-4 border-blue-600" style={{ height: '200px', zIndex: 10 }}>
+      {/* Нижняя часть: Панель управления */}
+      <div className="h-[280px] bg-gray-900 border-t-2 border-blue-600 flex flex-col">
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Row 1: Time Control */}
           <div className="flex items-center justify-center gap-2 mb-3">
