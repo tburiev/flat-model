@@ -47,7 +47,7 @@ function App() {
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020010);
+    scene.background = new THREE.Color(0x0a0a1a);
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
@@ -66,7 +66,7 @@ function App() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.8;
     containerRef.current.appendChild(renderer.domElement);
 
     // Controls
@@ -79,11 +79,16 @@ function App() {
     controls.target.set(0, 2, 0);
 
     // === LIGHTING ===
-    const ambientLight = new THREE.AmbientLight(0x334466, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x88aacc, 1.2);
     scene.add(ambientLight);
 
-    const hemisphereLight = new THREE.HemisphereLight(0x446688, 0x112233, 0.3);
+    const hemisphereLight = new THREE.HemisphereLight(0xaaccee, 0x445566, 0.8);
     scene.add(hemisphereLight);
+
+    // Additional fill light
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    fillLight.position.set(10, 20, 10);
+    scene.add(fillLight);
 
     // === FLAT EARTH DISK ===
     const earthRadius = 15;
@@ -136,9 +141,9 @@ function App() {
     // === NIGHT OVERLAY (day/night terminator) ===
     const nightGeometry = new THREE.CylinderGeometry(earthRadius + 0.01, earthRadius + 0.01, 0.52, 128, 1, false, 0, Math.PI);
     const nightMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000022,
+      color: 0x001133,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.4,
       side: THREE.DoubleSide,
     });
     const nightOverlay = new THREE.Mesh(nightGeometry, nightMaterial);
@@ -148,41 +153,52 @@ function App() {
     // === ICE WALL (Antarctica) ===
     const iceWallGroup = new THREE.Group();
 
-    // Main ice ring
-    const iceWallGeometry = new THREE.TorusGeometry(earthRadius + 0.3, 1.2, 8, 128);
+    // Simple white border (cylinder ring)
+    const iceWallGeometry = new THREE.CylinderGeometry(earthRadius + 0.5, earthRadius + 0.5, 2, 128, 1, true);
     const iceWallMaterial = new THREE.MeshStandardMaterial({
-      color: 0xc8ddf0,
-      emissive: 0x223344,
-      emissiveIntensity: 0.2,
-      roughness: 0.3,
+      color: 0xffffff,
+      emissive: 0x334455,
+      emissiveIntensity: 0.1,
+      roughness: 0.4,
       metalness: 0.1,
+      side: THREE.DoubleSide,
     });
     const iceWall = new THREE.Mesh(iceWallGeometry, iceWallMaterial);
-    iceWall.rotation.x = Math.PI / 2;
-    iceWall.position.y = 0.8;
+    iceWall.position.y = 1;
     iceWall.castShadow = true;
     iceWallGroup.add(iceWall);
 
-    // Ice spikes
-    for (let i = 0; i < 80; i++) {
-      const angle = (i / 80) * Math.PI * 2;
-      const spikeHeight = 0.8 + Math.random() * 2.5;
-      const spikeWidth = 0.15 + Math.random() * 0.3;
+    // Top cap of ice wall
+    const iceWallTopGeometry = new THREE.RingGeometry(earthRadius + 0.3, earthRadius + 0.7, 128);
+    const iceWallTopMaterial = new THREE.MeshStandardMaterial({
+      color: 0xeeeeff,
+      roughness: 0.3,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+    });
+    const iceWallTop = new THREE.Mesh(iceWallTopGeometry, iceWallTopMaterial);
+    iceWallTop.rotation.x = -Math.PI / 2;
+    iceWallTop.position.y = 2;
+    iceWallGroup.add(iceWallTop);
+
+    // Ice spikes on top of wall
+    for (let i = 0; i < 60; i++) {
+      const angle = (i / 60) * Math.PI * 2;
+      const spikeHeight = 0.5 + Math.random() * 1.5;
+      const spikeWidth = 0.1 + Math.random() * 0.2;
       const spikeGeometry = new THREE.ConeGeometry(spikeWidth, spikeHeight, 5);
       const spikeMaterial = new THREE.MeshStandardMaterial({
-        color: 0xddeeff,
-        emissive: 0x334466,
+        color: 0xffffff,
+        emissive: 0x445566,
         emissiveIntensity: 0.1,
-        roughness: 0.2,
-        metalness: 0.3,
-        transparent: true,
-        opacity: 0.85,
+        roughness: 0.3,
+        metalness: 0.2,
       });
       const spike = new THREE.Mesh(spikeGeometry, spikeMaterial);
-      const r = earthRadius + 0.3 + (Math.random() - 0.5) * 0.8;
+      const r = earthRadius + 0.5;
       spike.position.x = Math.cos(angle) * r;
       spike.position.z = Math.sin(angle) * r;
-      spike.position.y = spikeHeight / 2 + 0.3;
+      spike.position.y = 2 + spikeHeight / 2;
       spike.rotation.z = (Math.random() - 0.5) * 0.3;
       spike.rotation.x = (Math.random() - 0.5) * 0.3;
       iceWallGroup.add(spike);
@@ -754,55 +770,60 @@ function App() {
 
       {/* Controls */}
       <div className="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md rounded-xl p-3 sm:p-4 text-white border border-blue-900/50">
+        {/* Row 1: Time control */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Playback controls */}
-          <div className="flex items-center gap-1">
-            {/* Rewind */}
-            <button
-              onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
-              className={`px-2 py-2 rounded-lg text-sm transition-all ${
-                timeDirection === -1 && isPlaying
-                  ? 'bg-red-600 shadow-lg shadow-red-900/30'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-              title="Перемотка назад"
-            >
-              ⏪
-            </button>
-            {/* Play/Pause */}
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`px-3 py-2 rounded-lg font-medium text-sm transition-all ${
-                isPlaying
-                  ? 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/30'
-                  : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/30'
-              }`}
-            >
-              {isPlaying ? '⏸' : '▶'}
-            </button>
-            {/* Forward */}
-            <button
-              onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
-              className={`px-2 py-2 rounded-lg text-sm transition-all ${
-                timeDirection === 1 && isPlaying
-                  ? 'bg-green-600 shadow-lg shadow-green-900/30'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-              title="Перемотка вперёд"
-            >
-              ⏩
-            </button>
-            {/* Step controls */}
+          <span className="text-xs text-gray-400 font-medium">⏱️ Время:</span>
+          
+          {/* Rewind */}
+          <button
+            onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              timeDirection === -1 && isPlaying
+                ? 'bg-red-600 shadow-lg shadow-red-900/30 ring-2 ring-red-400'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+            title="Запустить время назад"
+          >
+            ⏪ Назад
+          </button>
+          
+          {/* Play/Pause */}
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+              isPlaying
+                ? 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/30'
+                : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/30'
+            }`}
+          >
+            {isPlaying ? '⏸ Пауза' : '▶ Запуск'}
+          </button>
+          
+          {/* Forward */}
+          <button
+            onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              timeDirection === 1 && isPlaying
+                ? 'bg-green-600 shadow-lg shadow-green-900/30 ring-2 ring-green-400'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+            title="Запустить время вперёд"
+          >
+            Вперёд ⏩
+          </button>
+
+          {/* Step controls (when paused) */}
+          <div className="flex items-center gap-1 ml-2">
             <button
               onClick={() => {
                 if (sceneRef.current) {
                   sceneRef.current.time -= 1;
                 }
               }}
-              className="px-2 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all"
-              title="Шаг назад"
+              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-medium"
+              title="Шаг назад (на паузе)"
             >
-              ◀
+              ◀ Шаг
             </button>
             <button
               onClick={() => {
@@ -810,42 +831,43 @@ function App() {
                   sceneRef.current.time += 1;
                 }
               }}
-              className="px-2 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all"
-              title="Шаг вперёд"
+              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-medium"
+              title="Шаг вперёд (на паузе)"
             >
-              ▶
+              Шаг ▶
             </button>
           </div>
+        </div>
 
-          {/* Speed Control */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-400 hidden sm:inline">Скорость:</span>
-            <button
-              onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
-              className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
-            >
-              ÷2
-            </button>
-            <span className="px-2 py-1.5 bg-gray-800 rounded text-xs font-mono min-w-[50px] text-center text-blue-300">
-              {timeSpeed.toFixed(1)}x
-            </span>
-            <button
-              onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
-              className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
-            >
-              ×2
-            </button>
-          </div>
+        {/* Row 2: Speed control */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-gray-700/50">
+          <span className="text-xs text-gray-400 font-medium">🚀 Скорость:</span>
+          
+          <button
+            onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition-colors font-medium"
+          >
+            ◀ Медленнее
+          </button>
+          <span className="px-3 py-1.5 bg-gray-800 rounded-lg text-sm font-mono min-w-[60px] text-center text-blue-300 font-bold">
+            {timeSpeed.toFixed(1)}x
+          </span>
+          <button
+            onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs transition-colors font-medium"
+          >
+            Быстрее ▶
+          </button>
 
           {/* Speed presets */}
-          <div className="flex gap-0.5">
+          <div className="flex gap-1 ml-2">
             {[0.25, 0.5, 1, 2, 5, 10, 20].map(speed => (
               <button
                 key={speed}
                 onClick={() => setTimeSpeed(speed)}
-                className={`px-1.5 py-1 rounded text-[10px] sm:text-xs transition-all ${
+                className={`px-2 py-1 rounded text-xs transition-all font-medium ${
                   Math.abs(timeSpeed - speed) < 0.01
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30 ring-2 ring-blue-400'
                     : 'bg-gray-700/80 hover:bg-gray-600 text-gray-300'
                 }`}
               >
@@ -853,40 +875,12 @@ function App() {
               </button>
             ))}
           </div>
-
-          {/* Toggles */}
-          <div className="flex gap-1.5 ml-auto">
-            <button
-              onClick={() => setShowDome(!showDome)}
-              className={`px-2 py-1.5 rounded-lg text-xs transition-all ${
-                showDome ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🫧 Купол
-            </button>
-            <button
-              onClick={() => setShowSunRays(!showSunRays)}
-              className={`px-2 py-1.5 rounded-lg text-xs transition-all ${
-                showSunRays ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ☀️ Лучи
-            </button>
-            <button
-              onClick={() => setDayNight(!dayNight)}
-              className={`px-2 py-1.5 rounded-lg text-xs transition-all ${
-                dayNight ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              🌗 День/Ночь
-            </button>
-          </div>
         </div>
 
-        {/* Season control row */}
+        {/* Row 3: Season control */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-gray-700/50">
-          <span className="text-xs text-gray-400">Время года:</span>
-          <span className="text-sm font-medium text-amber-300 min-w-[140px]">
+          <span className="text-xs text-gray-400 font-medium">🌍 Время года:</span>
+          <span className="text-sm font-bold text-amber-300 min-w-[160px]">
             {getSeasonName(season)}
           </span>
           <input
@@ -901,37 +895,66 @@ function App() {
           <div className="flex gap-1">
             <button
               onClick={() => setSeason(0)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season < 0.125 || season >= 0.875 ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
+              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+                season < 0.125 || season >= 0.875 ? 'bg-green-600 ring-2 ring-green-400' : 'bg-gray-700 hover:bg-gray-600'
               }`}
             >
               🌸 Весна
             </button>
             <button
               onClick={() => setSeason(0.25)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season >= 0.125 && season < 0.375 ? 'bg-yellow-600' : 'bg-gray-700 hover:bg-gray-600'
+              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+                season >= 0.125 && season < 0.375 ? 'bg-yellow-600 ring-2 ring-yellow-400' : 'bg-gray-700 hover:bg-gray-600'
               }`}
             >
               ☀️ Лето
             </button>
             <button
               onClick={() => setSeason(0.5)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season >= 0.375 && season < 0.625 ? 'bg-orange-600' : 'bg-gray-700 hover:bg-gray-600'
+              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+                season >= 0.375 && season < 0.625 ? 'bg-orange-600 ring-2 ring-orange-400' : 'bg-gray-700 hover:bg-gray-600'
               }`}
             >
               🍂 Осень
             </button>
             <button
               onClick={() => setSeason(0.75)}
-              className={`px-2 py-1 rounded text-[10px] transition-all ${
-                season >= 0.625 && season < 0.875 ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+              className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+                season >= 0.625 && season < 0.875 ? 'bg-blue-600 ring-2 ring-blue-400' : 'bg-gray-700 hover:bg-gray-600'
               }`}
             >
               ❄️ Зима
             </button>
           </div>
+        </div>
+
+        {/* Row 4: Toggles */}
+        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/50">
+          <span className="text-xs text-gray-400 font-medium">👁️ Отображение:</span>
+          <button
+            onClick={() => setShowDome(!showDome)}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+              showDome ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+          >
+            🫧 Купол {showDome ? 'ВКЛ' : 'ВЫКЛ'}
+          </button>
+          <button
+            onClick={() => setShowSunRays(!showSunRays)}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+              showSunRays ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+          >
+            ☀️ Лучи {showSunRays ? 'ВКЛ' : 'ВЫКЛ'}
+          </button>
+          <button
+            onClick={() => setDayNight(!dayNight)}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all font-medium ${
+              dayNight ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+          >
+            🌗 День/Ночь {dayNight ? 'ВКЛ' : 'ВЫКЛ'}
+          </button>
         </div>
       </div>
     </div>
