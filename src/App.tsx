@@ -700,154 +700,170 @@ function App() {
       </div>
 
       {/* Нижняя часть: Панель управления */}
-      <div className="bg-gradient-to-b from-gray-900 to-gray-950 border-t-2 border-blue-500/50">
-        <div className="max-w-6xl mx-auto px-6 py-4 space-y-3">
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-black border-t border-cyan-500/30 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-8 py-5 space-y-4">
           {/* Row 1: Time Control */}
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
               <button
                 onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                className={`relative px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 overflow-hidden group ${
                   timeDirection === -1 && isPlaying
-                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105'
-                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600 hover:scale-105'
+                    ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/50 scale-105'
+                    : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 hover:from-red-600 hover:to-red-700 hover:text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105'
                 }`}
               >
-                ⏪ Назад
+                <span className="relative z-10">⏪ Назад</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
               
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`px-8 py-2.5 rounded-lg text-base font-bold transition-all duration-200 ${
+                className={`relative px-10 py-3 rounded-lg text-base font-bold transition-all duration-300 overflow-hidden group ${
                   isPlaying
-                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-400'
-                    : 'bg-green-500 text-white shadow-lg shadow-green-500/30 hover:bg-green-400'
+                    ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-500/50 hover:shadow-xl hover:shadow-amber-500/60'
+                    : 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/60'
                 }`}
               >
-                {isPlaying ? '⏸ Пауза' : '▶ Старт'}
+                <span className="relative z-10">{isPlaying ? '⏸ Пауза' : '▶ Старт'}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
               
               <button
                 onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                className={`relative px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 overflow-hidden group ${
                   timeDirection === 1 && isPlaying
-                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 scale-105'
-                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600 hover:scale-105'
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/50 scale-105'
+                    : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 hover:from-emerald-600 hover:to-emerald-700 hover:text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-105'
                 }`}
               >
-                Вперёд ⏩
+                <span className="relative z-10">Вперёд ⏩</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
             </div>
 
-            <div className="h-10 w-px bg-gray-600"></div>
+            <div className="h-12 w-px bg-gradient-to-b from-transparent via-slate-600 to-transparent"></div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
               <button
                 onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
-                className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-cyan-500/50 flex items-center justify-center group overflow-hidden"
               >
-                ◀
+                <span className="relative z-10 text-xl">◀</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
               <button
                 onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
-                className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-cyan-500/50 flex items-center justify-center group overflow-hidden"
               >
-                ▶
+                <span className="relative z-10 text-xl">▶</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
             </div>
           </div>
 
           {/* Row 2: Speed Control */}
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <span className="text-sm text-gray-400 font-medium">Скорость:</span>
-            <button
-              onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
-              className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
-            >
-              −
-            </button>
-            <div className="px-5 py-2 bg-gray-800 rounded-lg border border-blue-500/30 min-w-[80px] text-center">
-              <span className="text-base font-mono font-bold text-blue-400">
-                {timeSpeed.toFixed(1)}x
-              </span>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
+              <span className="text-sm text-slate-400 font-semibold">Скорость:</span>
+              <button
+                onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
+                className="relative w-11 h-11 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-blue-600 hover:to-blue-700 text-white text-xl font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50 flex items-center justify-center group overflow-hidden"
+              >
+                <span className="relative z-10">−</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
+              <div className="px-6 py-2.5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-blue-500/40 min-w-[100px] text-center shadow-inner">
+                <span className="text-lg font-mono font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  {timeSpeed.toFixed(1)}x
+                </span>
+              </div>
+              <button
+                onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
+                className="relative w-11 h-11 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-blue-600 hover:to-blue-700 text-white text-xl font-bold transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50 flex items-center justify-center group overflow-hidden"
+              >
+                <span className="relative z-10">+</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </button>
             </div>
-            <button
-              onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
-              className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
-            >
-              +
-            </button>
             
-            <div className="h-10 w-px bg-gray-600"></div>
+            <div className="h-12 w-px bg-gradient-to-b from-transparent via-slate-600 to-transparent"></div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-slate-800/50 rounded-xl p-3 backdrop-blur-sm border border-slate-700/50">
               {[0.5, 1, 2, 5, 10].map(speed => (
                 <button
                   key={speed}
                   onClick={() => setTimeSpeed(speed)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  className={`relative px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 overflow-hidden group ${
                     Math.abs(timeSpeed - speed) < 0.01
-                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 scale-105'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:scale-105'
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105'
+                      : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-300 hover:from-blue-600 hover:to-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105'
                   }`}
                 >
-                  {speed}x
+                  <span className="relative z-10">{speed}x</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Row 3: Time Slider */}
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <span className="text-sm text-gray-400 font-medium">Время:</span>
-            <input
-              ref={timeSliderRef}
-              type="range"
-              min="0"
-              max="100"
-              step="0.1"
-              defaultValue="0"
-              onChange={(e) => {
-                const newTime = parseFloat(e.target.value);
-                if (sceneRef.current) {
-                  sceneRef.current.time = newTime;
-                }
-              }}
-              className="w-96 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-4 bg-slate-800/50 rounded-xl p-4 backdrop-blur-sm border border-slate-700/50 w-full max-w-2xl">
+              <span className="text-sm text-slate-400 font-semibold whitespace-nowrap">Время:</span>
+              <input
+                ref={timeSliderRef}
+                type="range"
+                min="0"
+                max="24"
+                step="0.01"
+                defaultValue="0"
+                onChange={(e) => {
+                  const newTime = parseFloat(e.target.value);
+                  if (sceneRef.current) {
+                    sceneRef.current.time = newTime;
+                  }
+                }}
+                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+              <span className="text-xs text-slate-500 whitespace-nowrap">±24ч</span>
+            </div>
           </div>
 
           {/* Row 4: Season Control */}
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <span className="text-sm text-gray-400 font-medium">Сезон:</span>
-            <div className="px-5 py-2 bg-gray-800 rounded-lg border border-amber-500/30 min-w-[150px] text-center">
-              <span className="text-sm font-bold text-amber-400">
-                {getSeasonName(season)}
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={season}
-              onChange={(e) => setSeason(parseFloat(e.target.value))}
-              className="w-56 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-            />
-            <div className="flex gap-2">
-              {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSeason(i * 0.25)}
-                  className={`w-11 h-11 rounded-lg text-xl transition-all duration-200 flex items-center justify-center ${
-                    Math.abs(season - i * 0.25) < 0.125
-                      ? 'bg-amber-500 shadow-lg shadow-amber-500/30 scale-110'
-                      : 'bg-gray-700 hover:bg-gray-600 hover:scale-105'
-                  }`}
-                >
-                  {icon}
-                </button>
-              ))}
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-4 bg-slate-800/50 rounded-xl p-4 backdrop-blur-sm border border-slate-700/50">
+              <span className="text-sm text-slate-400 font-semibold">Сезон:</span>
+              <div className="px-6 py-2.5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-amber-500/40 min-w-[160px] text-center shadow-inner">
+                <span className="text-sm font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                  {getSeasonName(season)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={season}
+                onChange={(e) => setSeason(parseFloat(e.target.value))}
+                className="w-64 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <div className="flex gap-2">
+                {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSeason(i * 0.25)}
+                    className={`relative w-12 h-12 rounded-lg text-xl transition-all duration-300 flex items-center justify-center overflow-hidden group ${
+                      Math.abs(season - i * 0.25) < 0.125
+                        ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/50 scale-110'
+                        : 'bg-gradient-to-br from-slate-700 to-slate-800 hover:from-amber-600 hover:to-amber-700 hover:shadow-lg hover:shadow-amber-500/30 hover:scale-105'
+                    }`}
+                  >
+                    <span className="relative z-10">{icon}</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
