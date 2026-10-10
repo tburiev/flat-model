@@ -132,16 +132,71 @@ function App() {
     edge.position.y = 0;
     scene.add(edge);
 
-    // === NIGHT OVERLAY (day/night terminator) ===
-    const nightGeometry = new THREE.CylinderGeometry(earthRadius + 0.01, earthRadius + 0.01, 0.52, 128, 1, false, 0, Math.PI);
-    const nightMaterial = new THREE.MeshBasicMaterial({
-      color: 0x001133,
+    // === NIGHT OVERLAY (day/night terminator with shader) ===
+    const nightGeometry = new THREE.CircleGeometry(earthRadius, 128);
+    nightGeometry.rotateX(-Math.PI / 2);
+    
+    const nightUniforms = {
+      sunPosition: { value: new THREE.Vector3(10, 8, 0) },
+      earthRadius: { value: earthRadius },
+    };
+    
+    const nightMaterial = new THREE.ShaderMaterial({
+      uniforms: nightUniforms,
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 sunPosition;
+        uniform float earthRadius;
+        varying vec3 vWorldPosition;
+        
+        void main() {
+          // Vector from point on disk to sun
+          vec3 toSun = sunPosition - vWorldPosition;
+          float distanceToSun = length(toSun);
+          
+          // Normalize
+          vec3 dirToSun = toSun / distanceToSun;
+          
+          // Surface normal (pointing up)
+          vec3 surfaceNormal = vec3(0.0, 1.0, 0.0);
+          
+          // Dot product determines if sun is above horizon
+          float dotProduct = dot(dirToSun, surfaceNormal);
+          
+          // Terminator calculation
+          // When dotProduct > 0: sun is above horizon (day)
+          // When dotProduct < 0: sun is below horizon (night)
+          // Smooth transition at terminator
+          
+          float terminator = smoothstep(-0.1, 0.1, dotProduct);
+          
+          // Night side opacity (inverse of terminator)
+          float nightOpacity = 1.0 - terminator;
+          
+          // Distance-based darkening (farther from sun = darker)
+          float distanceFactor = clamp(distanceToSun / (earthRadius * 2.0), 0.0, 1.0);
+          nightOpacity *= mix(0.3, 0.7, distanceFactor);
+          
+          // Night color
+          vec3 nightColor = vec3(0.0, 0.05, 0.15);
+          
+          gl_FragColor = vec4(nightColor, nightOpacity * 0.6);
+        }
+      `,
       transparent: true,
-      opacity: 0.4,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
+    
     const nightOverlay = new THREE.Mesh(nightGeometry, nightMaterial);
-    nightOverlay.position.y = 0.01;
+    nightOverlay.position.y = 0.27;
     scene.add(nightOverlay);
 
 
@@ -443,22 +498,7 @@ function App() {
     }
     scene.add(gridGroup);
 
-    // === NORTH POLE marker (no flag!) ===
-    const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8);
-    const poleMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff3333,
-      emissive: 0xff0000,
-      emissiveIntensity: 0.3,
-    });
-    const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-    pole.position.y = 0.75;
-    scene.add(pole);
 
-    // Pole top sphere
-    const poleTopGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-    const poleTop = new THREE.Mesh(poleTopGeometry, poleMaterial);
-    poleTop.position.y = 1.6;
-    scene.add(poleTop);
 
     // === FIRMAMENT LABEL ===
     const firmamentLabel = createTextSprite('✦ ТВЕРДЬ (FIRMAMENT) ✦', 4);
@@ -584,8 +624,11 @@ function App() {
       // Update moon orbit ring
       updateOrbitRing(ref.moonOrbitRing, moonRadius, moonHeight);
 
-      // Night overlay rotation (opposite to sun)
-      ref.nightOverlay.rotation.y = -sunAngle + Math.PI;
+      // Update night overlay shader with sun position
+      const nightMaterial = ref.nightOverlay.material as THREE.ShaderMaterial;
+      if (nightMaterial.uniforms && nightMaterial.uniforms.sunPosition) {
+        nightMaterial.uniforms.sunPosition.value.copy(ref.sun.position);
+      }
 
       // Stars slow rotation
       ref.stars.rotation.y = t * 0.05;
