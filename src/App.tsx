@@ -697,26 +697,29 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-gray-950">
-      {/* 3D Canvas */}
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="w-full h-screen flex flex-col bg-gray-950">
+      {/* 3D Scene Container */}
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
+        {/* 3D Canvas */}
+        <div ref={containerRef} className="absolute inset-0" />
+        
+        {/* Title */}
+        <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md rounded-xl px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 1000 }}>
+          <h1 className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+            🌍 Модель Плоской Земли
+          </h1>
+        </div>
 
-      {/* Title */}
-      <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md rounded-xl px-4 py-2 text-white border border-blue-900/50">
-        <h1 className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-          🌍 Модель Плоской Земли
-        </h1>
-      </div>
-
-      {/* Time display */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-lg px-4 py-2 text-white border border-blue-900/50">
-        <div ref={timeDisplayRef} className="text-base font-mono text-blue-300 text-center">
-          0.0ч | День 0
+        {/* Time display */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-md rounded-lg px-4 py-2 text-white border-2 border-blue-700" style={{ zIndex: 1000 }}>
+          <div ref={timeDisplayRef} className="text-base font-mono text-blue-300 text-center">
+            0.0ч | День 0
+          </div>
         </div>
       </div>
 
       {/* Control Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 to-black/80 backdrop-blur-md border-t border-blue-900/50">
+      <div className="bg-black border-t-4 border-blue-600" style={{ height: '200px', flexShrink: 0 }}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Row 1: Time Control */}
           <div className="flex items-center justify-center gap-2 mb-3">
