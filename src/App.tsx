@@ -717,101 +717,111 @@ function App() {
       </div>
 
       {/* Нижняя часть: Панель управления */}
-      <div className="h-[280px] bg-gray-900 border-t-2 border-blue-600 flex flex-col">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+      <div className="bg-gradient-to-b from-gray-900 to-gray-950 border-t-2 border-blue-500/50">
+        <div className="max-w-6xl mx-auto px-6 py-4 space-y-3">
           {/* Row 1: Time Control */}
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <button
-              onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                timeDirection === -1 && isPlaying
-                  ? 'bg-red-600 shadow-lg shadow-red-900/50 ring-2 ring-red-400'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              ⏪ Назад
-            </button>
-            
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`px-6 py-2 rounded-lg text-base font-bold transition-all ${
-                isPlaying
-                  ? 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/50'
-                  : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/50'
-              }`}
-            >
-              {isPlaying ? '⏸ Пауза' : '▶ Старт'}
-            </button>
-            
-            <button
-              onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                timeDirection === 1 && isPlaying
-                  ? 'bg-green-600 shadow-lg shadow-green-900/50 ring-2 ring-green-400'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              Вперёд ⏩
-            </button>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setTimeDirection(-1); setIsPlaying(true); }}
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  timeDirection === -1 && isPlaying
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105'
+                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600 hover:scale-105'
+                }`}
+              >
+                ⏪ Назад
+              </button>
+              
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`px-8 py-2.5 rounded-lg text-base font-bold transition-all duration-200 ${
+                  isPlaying
+                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-400'
+                    : 'bg-green-500 text-white shadow-lg shadow-green-500/30 hover:bg-green-400'
+                }`}
+              >
+                {isPlaying ? '⏸ Пауза' : '▶ Старт'}
+              </button>
+              
+              <button
+                onClick={() => { setTimeDirection(1); setIsPlaying(true); }}
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  timeDirection === 1 && isPlaying
+                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 scale-105'
+                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600 hover:scale-105'
+                }`}
+              >
+                Вперёд ⏩
+              </button>
+            </div>
 
-            <div className="w-px h-8 bg-gray-600 mx-2"></div>
+            <div className="h-10 w-px bg-gray-600"></div>
 
-            <button
-              onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
-              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-bold"
-            >
-              ◀
-            </button>
-            <button
-              onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
-              className="px-3 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-all font-bold"
-            >
-              ▶
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { if (sceneRef.current) sceneRef.current.time -= 1; }}
+                className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
+              >
+                ◀
+              </button>
+              <button
+                onClick={() => { if (sceneRef.current) sceneRef.current.time += 1; }}
+                className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
+              >
+                ▶
+              </button>
+            </div>
           </div>
 
           {/* Row 2: Speed Control */}
-          <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             <span className="text-sm text-gray-400 font-medium">Скорость:</span>
             <button
               onClick={() => setTimeSpeed(Math.max(0.1, timeSpeed / 2))}
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm font-bold"
+              className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
             >
               −
             </button>
-            <span className="px-4 py-1.5 bg-gray-800 rounded text-sm font-mono font-bold text-blue-300 min-w-[70px] text-center">
-              {timeSpeed.toFixed(1)}x
-            </span>
+            <div className="px-5 py-2 bg-gray-800 rounded-lg border border-blue-500/30 min-w-[80px] text-center">
+              <span className="text-base font-mono font-bold text-blue-400">
+                {timeSpeed.toFixed(1)}x
+              </span>
+            </div>
             <button
               onClick={() => setTimeSpeed(Math.min(50, timeSpeed * 2))}
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm font-bold"
+              className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-lg font-bold transition-all duration-200 hover:scale-110 flex items-center justify-center"
             >
               +
             </button>
             
-            <div className="w-px h-6 bg-gray-600 mx-2"></div>
+            <div className="h-10 w-px bg-gray-600"></div>
 
-            {[0.5, 1, 2, 5, 10].map(speed => (
-              <button
-                key={speed}
-                onClick={() => setTimeSpeed(speed)}
-                className={`px-3 py-1.5 rounded text-sm font-bold transition-all ${
-                  Math.abs(timeSpeed - speed) < 0.01
-                    ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                }`}
-              >
-                {speed}x
-              </button>
-            ))}
+            <div className="flex items-center gap-2">
+              {[0.5, 1, 2, 5, 10].map(speed => (
+                <button
+                  key={speed}
+                  onClick={() => setTimeSpeed(speed)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    Math.abs(timeSpeed - speed) < 0.01
+                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 scale-105'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:scale-105'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Row 3: Season Control */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             <span className="text-sm text-gray-400 font-medium">Сезон:</span>
-            <span className="text-sm font-bold text-amber-300 min-w-[140px] text-center">
-              {getSeasonName(season)}
-            </span>
+            <div className="px-5 py-2 bg-gray-800 rounded-lg border border-amber-500/30 min-w-[150px] text-center">
+              <span className="text-sm font-bold text-amber-400">
+                {getSeasonName(season)}
+              </span>
+            </div>
             <input
               type="range"
               min="0"
@@ -819,17 +829,17 @@ function App() {
               step="0.01"
               value={season}
               onChange={(e) => setSeason(parseFloat(e.target.value))}
-              className="w-48 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              className="w-56 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               {['🌸', '☀️', '🍂', '❄️'].map((icon, i) => (
                 <button
                   key={i}
                   onClick={() => setSeason(i * 0.25)}
-                  className={`px-3 py-1.5 rounded text-lg transition-all ${
+                  className={`w-11 h-11 rounded-lg text-xl transition-all duration-200 flex items-center justify-center ${
                     Math.abs(season - i * 0.25) < 0.125
-                      ? 'bg-amber-600 shadow-lg ring-2 ring-amber-400'
-                      : 'bg-gray-700 hover:bg-gray-600'
+                      ? 'bg-amber-500 shadow-lg shadow-amber-500/30 scale-110'
+                      : 'bg-gray-700 hover:bg-gray-600 hover:scale-105'
                   }`}
                 >
                   {icon}
